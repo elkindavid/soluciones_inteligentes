@@ -23,7 +23,7 @@
                  list="listaEmpleados"
                  class="w-full border rounded p-2">
           <datalist id="listaEmpleados">
-            <template x-for="(e, index) in empleados" :key="e.documentoEmpleado || index">
+            <template x-for="(e, index) in empleados" :key="e.numeroDocumento || index">
               <option :value="e.nombreCompleto + ' ' + e.apellidoCompleto"></option>
             </template>
           </datalist>

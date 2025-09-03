@@ -1,5 +1,5 @@
 // Nombre de cache principal
-const CACHE_NAME = "destajos-cache-v1";
+const CACHE_NAME = "destajos-cache-v2";
 
 // Archivos a precachear (todos los que tienes en Cache Storage)
 const PRECACHE_URLS = [

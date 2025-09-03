@@ -1,6 +1,6 @@
 let db = null;
 const DB_NAME = 'destajos';
-const DB_VERSION = 1; // 👈 subimos versión para forzar recreación
+const DB_VERSION = 2; // 👈 subimos versión para forzar recreación
 const STORE_QUEUE = 'queue';
 const STORE_EMPLEADOS = 'GH_Empleados';
 const STORE_DESTAJOS = 'GH_Destajos';
@@ -651,7 +651,7 @@ async function syncTables() {
     try {
         // Traer usuarios
         let usuarios = [];
-        try { usuarios = await API.get('/api/users'); } 
+        try { usuarios = await API.get('/auth/users'); } 
         catch(e){ console.warn("⚠️ No se pudo sincronizar users", e); }
 
         // Traer empleados
