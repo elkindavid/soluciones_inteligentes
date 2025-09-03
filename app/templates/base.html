@@ -50,7 +50,7 @@
                 <a href="{{ url_for('auth.listado') }}" class="block px-4 py-2 text-sm hover:bg-slate-100">👥 Listado</a>
               {% endif %}
               
-              <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-slate-100">⎋ Salir</a>
+              <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-slate-100" onclick="clearLocalAuth()">⎋ Salir</a>
             </div>
           </div>
         {% else %}

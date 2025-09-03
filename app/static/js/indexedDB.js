@@ -1,6 +1,6 @@
 let db = null;
 const DB_NAME = 'destajos';
-const DB_VERSION = 6; // 👈 subimos versión para forzar recreación
+const DB_VERSION = 9; // 👈 subimos versión para forzar recreación
 const STORE_QUEUE = 'queue';
 const STORE_EMPLEADOS = 'GH_Empleados';
 const STORE_DESTAJOS = 'GH_Destajos';
@@ -683,6 +683,9 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-
+function clearLocalAuth() {
+  localStorage.removeItem('currentUser');
+  // si usas IndexedDB para usuarios, también límpialo si hace falta
+}
 
 window.initDB = initDB;
