@@ -4,4 +4,4 @@ app = create_app()
 
 if __name__ == "__main__":
     # Esto solo corre en local
-    app.run(debug=True, host="0.0.0.0", port=5029)
+    app.run(debug=True, host="0.0.0.0", port=8080)

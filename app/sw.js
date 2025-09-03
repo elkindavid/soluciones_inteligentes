@@ -1,5 +1,5 @@
 // Nombre de cache principal
-const CACHE_NAME = "destajos-cache-v2";
+const CACHE_NAME = "destajos-cache-v6";
 
 // Archivos a precachear (todos los que tienes en Cache Storage)
 const PRECACHE_URLS = [
@@ -11,6 +11,7 @@ const PRECACHE_URLS = [
   "/static/images/logo-192.png",
   "/static/images/logo-512.png",
   "/static/images/logo.png",
+  "/static/images/fallback.png",
   "/static/js/alpine.min.js",
   "/static/js/indexedDB.js",
   "/static/manifest.json",

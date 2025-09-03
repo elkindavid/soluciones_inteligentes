@@ -1,6 +1,6 @@
 let db = null;
 const DB_NAME = 'destajos';
-const DB_VERSION = 2; // 👈 subimos versión para forzar recreación
+const DB_VERSION = 6; // 👈 subimos versión para forzar recreación
 const STORE_QUEUE = 'queue';
 const STORE_EMPLEADOS = 'GH_Empleados';
 const STORE_DESTAJOS = 'GH_Destajos';
@@ -28,11 +28,11 @@ function initDB(){
         console.log("🗂️ Store creada:", STORE_QUEUE);
       }
 
-      // --- Store usuarios (para login offline) ---
-      if (!db.objectStoreNames.contains(STORE_USUARIOS)) {
-        db.createObjectStore(STORE_USUARIOS, { keyPath: "id" });
-        console.log("🗂️ Store creada:", STORE_USUARIOS);
-      }
+      // // --- Store usuarios (para login offline) ---
+      // if (!db.objectStoreNames.contains(STORE_USUARIOS)) {
+      //   db.createObjectStore(STORE_USUARIOS, { keyPath: "id" });
+      //   console.log("🗂️ Store creada:", STORE_USUARIOS);
+      // }
 
       // --- Store empleados ---
       if (!db.objectStoreNames.contains(STORE_EMPLEADOS)) {
@@ -586,7 +586,7 @@ async function loginOffline(username, password) {
 
 async function loginOnline(username, password) {
     try {
-        const res = await API.post("/api/login", { username, password });
+        const res = await API.post("/login", { username, password });
         if (res.success) {
             localStorage.setItem("currentUser", JSON.stringify(res.user));
             await syncTables();
@@ -651,7 +651,7 @@ async function syncTables() {
     const db = await initDB();
 
     try {
-        await syncTable(db, STORE_USUARIOS, "/auth/users");
+        // await syncTable(db, STORE_USUARIOS, "/auth/users");
         await syncTable(db, STORE_EMPLEADOS, "/api/empleados");
         await syncTable(db, STORE_DESTAJOS, "/api/mdestajos");
 
