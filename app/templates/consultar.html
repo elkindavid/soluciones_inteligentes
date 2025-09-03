@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Consultar Destajos{% endblock %}
+
+{% block content %}
+<div x-data="consultarView()" x-init="init()" class="p-6 space-y-6">
+
+  <!-- Encabezado -->
+  <div class="text-center">
+    <h1 class="text-2xl font-bold mb-2">Consulta de Registros</h1>
+    <p class="text-gray-600">Historial destajos...</p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-2xl shadow p-4">
+    <h2 class="text-lg font-semibold mb-3">Filtros de búsqueda</h2>
+    <div class="grid md:grid-cols-4 gap-4 items-end">
+      <input placeholder="Documento" x-model="documento" class="border rounded-lg p-2 focus:ring-2 focus:ring-sky-500">
+      <input type="date" x-model="desde" class="border rounded-lg p-2 focus:ring-2 focus:ring-sky-500">
+      <input type="date" x-model="hasta" class="border rounded-lg p-2 focus:ring-2 focus:ring-sky-500">
+      <div class="flex space-x-2">
+        <button @click="buscar()" 
+                class="px-4 py-2 bg-sky-600 text-white rounded-lg shadow w-28 text-center hover:bg-sky-700">
+          Buscar
+        </button>
+
+        <a href="{{ url_for('web.destajos') }}"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow w-28 text-center hover:bg-indigo-700">
+          Nuevo
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="bg-white rounded-2xl shadow p-4 overflow-auto">
+    <table class="min-w-full text-sm border-collapse">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="text-left p-2 font-semibold">Fecha</th>
+          <th class="text-left p-2 font-semibold">Empleado</th>
+          <th class="text-left p-2 font-semibold">Documento</th>
+          <th class="text-left p-2 font-semibold">Destajo</th>
+          <th class="text-right p-2 font-semibold">Cantidad</th>
+          <th class="text-center p-2 font-semibold">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="r in registros" :key="r.local_id || r.id">
+          <tr class="border-b hover:bg-gray-50 transition">
+
+            <!-- Fecha -->
+            <td class="p-2">
+              <template x-if="!r._edit">
+                <span x-text="r.fecha"></span>
+              </template>
+              <template x-if="r._edit">
+                <input type="date" x-model="r.fecha" class="border rounded p-1">
+              </template>
+            </td>
+
+            <!-- Empleado -->
+            <td class="p-2" x-text="r.empleado_nombre"></td>
+
+            <!-- Documento -->
+            <td class="p-2" x-text="r.empleado_documento"></td>
+
+            <!-- Destajo -->
+            <td class="p-2">
+              <span x-show="!r._edit" x-text="destajosMap.get(Number(r.destajo_id)) || '—'"></span>
+              <select 
+                x-show="r._edit" 
+                x-model.number="r.destajo_id" 
+                class="border rounded p-1 w-48">
+                <template x-for="d in destajos" :key="d.id">
+                  <option :value="d.id" :selected="d.id === Number(r.destajo_id)" x-text="d.concepto"> </option>
+                </template>
+              </select>
+            </td>
+
+            <!-- Cantidad -->
+            <td class="p-2 text-right">
+              <template x-if="!r._edit">
+                <span x-text="r.cantidad"></span>
+              </template>
+              <template x-if="r._edit">
+                <input type="number" step="1" min="1" x-model.number="r.cantidad" class="border rounded p-1 w-24 text-right">
+              </template>
+            </td>
+
+            <!-- Acciones -->
+            <td class="p-2 text-center">
+              <template x-if="!r._edit">
+                <div class="flex justify-center space-x-2">
+                  <button @click="editar(r)" class="px-2 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200">Editar</button>
+                  <button @click="eliminar(r)" class="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200">Eliminar</button>
+                </div>
+              </template>
+
+              <template x-if="r._edit">
+                <div class="flex justify-center space-x-2">
+                  <button @click="guardar(r)" class="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">Guardar</button>
+                  <button @click="cancelar(r)" class="px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Cancelar</button>
+                </div>
+              </template>
+            </td>
+
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

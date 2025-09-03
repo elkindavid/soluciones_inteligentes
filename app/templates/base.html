@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}App de Destajos{% endblock %}</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+  <script src="/static/css/tailwind.min.css"></script>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <nav class="bg-white shadow sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+      <a href="/" class="font-semibold text-sky-600">Carbomaz • Apps</a>
+
+      <div class="flex items-center space-x-4">
+        {% if current_user.is_authenticated %}
+          <div 
+            x-data="{ open: false, online: navigator.onLine }"
+            x-init="
+              window.addEventListener('online', () => online = true);
+              window.addEventListener('offline', () => { online = false; open = false });
+            "
+            class="relative"
+          >
+            <!-- Botón solo visible si hay conexión -->
+              <!-- x-show="online" -->
+            <button 
+              @click="open = !open" 
+              class="flex items-center space-x-1 text-sm font-medium text-slate-700 hover:text-sky-600"
+            >
+              <span>{{ current_user.name }}</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Menú solo visible si hay conexión -->
+            <div 
+              x-show="open && online" 
+              @click.away="open = false" 
+              class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-20"
+            >
+              <a href="{{ url_for('auth.change_password') }}" class="block px-4 py-2 text-sm hover:bg-slate-100">🔑 Cambiar contraseña</a>
+              
+              {% if current_user.is_admin %}
+                <a href="{{ url_for('auth.register') }}" class="block px-4 py-2 text-sm hover:bg-slate-100">➕ Nuevo usuario</a>
+                <a href="{{ url_for('auth.listado') }}" class="block px-4 py-2 text-sm hover:bg-slate-100">👥 Listado</a>
+              {% endif %}
+              
+              <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-slate-100">⎋ Salir</a>
+            </div>
+          </div>
+        {% else %}
+          <a class="text-sm" href="{{ url_for('auth.login') }}">Entrar</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2">
+          {% for cat, msg in messages %}
+            <div class="p-3 rounded bg-yellow-50 border border-yellow-200">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  
+  <script src="{{ url_for('static', filename='js/indexedDB.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/alpine.min.js') }}" defer></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () =>{
+      await initDB(); // Inicializa IndexedDB
+      console.log("Base de datos lista para usarse");
+    })
+  </script>
+
+   <!-- 👇 REGISTRO DEL SERVICE WORKER -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("✅ Service Worker registrado"))
+        .catch(err => console.error("❌ Error registrando SW:", err));
+    }
+  </script>
+
+</body>
+</html>

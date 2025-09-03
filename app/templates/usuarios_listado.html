@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Usuarios registrados</h1>
+<table class="w-full border text-sm">
+  <thead>...
+    <th class="border px-2 py-1">ID</th>
+    <th class="border px-2 py-1">Nombre</th>
+    <th class="border px-2 py-1">Correo</th>
+    <th class="border px-2 py-1">Admin</th>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td class="border px-2 py-1">{{ u.id }}</td>
+      <td class="border px-2 py-1">{{ u.name }}</td>
+      <td class="border px-2 py-1">{{ u.email }}</td>
+      <td class="border px-2 py-1">{{ '✅' if u.is_admin else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

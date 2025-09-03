@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Destajos App{% endblock %}
+{% block content %}
+<div class="p-6 space-y-8">
+  
+  <!-- Encabezado -->
+  <div class="text-center">
+    <h1 class="text-2xl font-bold mb-2">Registro de Destajos</h1>
+    <p class="text-gray-600">Agrega nuevos registros...</p>
+  </div>
+
+  <!-- Bloque de Registro -->
+  <div x-init="initDB()"> <!-- IndexedDB abre al cargar -->
+    <div x-data="destajosForm()" class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Nuevo registro</h2>
+      <form @submit.prevent="submit()" class="grid md:grid-cols-2 gap-4">
+        
+        <!-- Empleado -->
+        <div>
+          <label class="block text-sm">Empleado (nombre)</label>
+          <input x-model="empleado_nombre"
+                 @input.debounce.300="buscarEmpleado()" 
+                 @change="asignarDocumento()"
+                 list="listaEmpleados"
+                 class="w-full border rounded p-2">
+          <datalist id="listaEmpleados">
+            <template x-for="(e, index) in empleados" :key="e.documento || index">
+              <option :value="e.nombre"></option>
+            </template>
+          </datalist>
+          <span class="text-red-500 text-sm" x-text="errores.empleado_nombre"></span>
+        </div>
+
+        <!-- Documento -->
+        <div>
+          <label class="block text-sm">Documento</label>
+          <input x-model="empleado_documento"
+                 readonly
+                 class="w-full border rounded p-2 bg-gray-100">
+          <span class="text-red-500 text-sm" x-text="errores.empleado_documento"></span>
+        </div>
+
+        <!-- Destajo -->
+        <div>
+          <label class="block text-sm">Destajo</label>
+          <input x-model="destajo_text"
+                 @input.debounce.300="searchDestajo()"
+                 list="listaDestajos"
+                 class="w-full border rounded p-2">
+          <datalist id="listaDestajos">
+            <template x-for="d in destajos" :key="d.id">
+              <option :value="d.concepto" x-text="d.concepto"></option>
+            </template>
+          </datalist>
+          <span class="text-red-500 text-sm" x-text="errores.destajo"></span>
+        </div>
+
+        <!-- Cantidad -->
+        <div>
+          <label class="block text-sm">Cantidad</label>
+          <input type="number" step="1" min="1"
+                 x-model.number="cantidad"
+                 class="w-full border rounded p-2">
+          <span class="text-red-500 text-sm" x-text="errores.cantidad"></span>
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label class="block text-sm">Fecha</label>
+          <input type="date"
+                 x-model="fecha"
+                 class="w-full border rounded p-2">
+          <span class="text-red-500 text-sm" x-text="errores.fecha"></span>
+        </div>
+
+        <!-- Guardar -->
+        <div class="flex items-end space-x-2 p-4">
+          <button class="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 w-28">
+            Guardar
+          </button>
+
+          <a href="{{ url_for('web.consultar') }}" 
+            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 w-28 text-center">
+            Buscar
+          </a>
+
+          <span class="ml-3 text-sm text-gray-500" x-text="status"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
