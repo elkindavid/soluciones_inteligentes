@@ -3,15 +3,10 @@ const CACHE_NAME = "destajos-cache-v1";
 
 // Archivos a precachear (todos los que tienes en Cache Storage)
 const PRECACHE_URLS = [
-  "/",                      // home.html
-  "/destajos",              // destajos.html
-  "/consultar",             // consultar.html
-  "/auth/usuarios",         // usuarios_listado.html
-  "/auth/login",            // auth_login.html
-  "/auth/register",         // auth_register.html
-  "/auth/change-password",  // auth_change_password.html
-  "/static/css/custom.css",
-  "/static/css/input.css",
+  "/",                      
+  "/destajos",              
+  "/consultar",             
+  "/auth/login",            
   "/static/css/tailwind.min.css",
   "/static/images/logo-192.png",
   "/static/images/logo-512.png",
@@ -27,11 +22,16 @@ const PRECACHE_URLS = [
 // Instalación del SW y precache
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => {
+      return Promise.allSettled(
+        PRECACHE_URLS.map(url => cache.add(url).catch(err => {
+          console.warn("⚠️ No se pudo cachear:", url, err);
+        }))
+      );
+    }).then(() => self.skipWaiting())
   );
 });
+
 
 // Activación del SW y limpieza de caches antiguos
 self.addEventListener("activate", event => {
