@@ -43,7 +43,6 @@
         <div>
           <label class="block text-sm">Destajo</label>
           <input x-model="destajo_text"
-                 @input.debounce.300="searchDestajo()"
                  list="listaDestajos"
                  class="w-full border rounded p-2">
           <datalist id="listaDestajos">
