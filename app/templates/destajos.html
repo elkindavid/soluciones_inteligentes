@@ -19,13 +19,12 @@
         <div>
           <label class="block text-sm">Empleado (nombre)</label>
           <input x-model="empleado_nombre"
-                 @input.debounce.300="buscarEmpleado()" 
                  @change="asignarDocumento()"
                  list="listaEmpleados"
                  class="w-full border rounded p-2">
           <datalist id="listaEmpleados">
-            <template x-for="(e, index) in empleados" :key="e.documento || index">
-              <option :value="e.nombre"></option>
+            <template x-for="(e, index) in empleados" :key="e.documentoEmpleado || index">
+              <option :value="e.nombreCompleto + ' ' + e.apellidoCompleto"></option>
             </template>
           </datalist>
           <span class="text-red-500 text-sm" x-text="errores.empleado_nombre"></span>
@@ -48,8 +47,8 @@
                  list="listaDestajos"
                  class="w-full border rounded p-2">
           <datalist id="listaDestajos">
-            <template x-for="d in destajos" :key="d.id">
-              <option :value="d.concepto" x-text="d.concepto"></option>
+            <template x-for="(d, index) in destajos" :key="d.Id || index">
+              <option :value="d.Concepto"></option>
             </template>
           </datalist>
           <span class="text-red-500 text-sm" x-text="errores.destajo"></span>

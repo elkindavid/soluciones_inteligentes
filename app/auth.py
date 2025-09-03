@@ -36,12 +36,8 @@ def listado():
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        if current_app.config.get("IS_ONLINE", True):
-            # 🔗 Online → SQL Server
-            return User.query.get(int(user_id))
-        else:
-            # ⚡ Offline → SQLite o LocalUser
-            return LocalUser.query.get(int(user_id))
+        # 🔗 Solo online (SQL Server)
+        return User.query.get(int(user_id))
     except Exception as e:
         logger.error(f"Error cargando usuario: {e}")
         return None
@@ -53,12 +49,8 @@ def login():
         email = request.form.get("email","").strip().lower()
         password = request.form.get("password","")
 
-        if not current_app.config.get("IS_ONLINE", False):
-            # ⚡ Modo offline → SQLite
-            user = LocalUser.query.filter_by(email=email).first()
-        else:
-            # 🔗 Conexión online → SQL Server
-            user = User.query.filter_by(email=email).first()
+        # Solo online → SQL Server
+        user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
             login_user(user)

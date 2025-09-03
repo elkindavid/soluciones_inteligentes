@@ -53,13 +53,7 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
     event.respondWith(
       fetch(event.request).catch(() =>
-        new Response(
-          JSON.stringify({ offline: true, message: "Sin conexión" }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" }
-          }
-        )
+        new Response(JSON.stringify([]), { headers: { "Content-Type": "application/json" } })
       )
     );
     return; // 👈 importante: salir aquí

@@ -2,9 +2,9 @@ let db = null;
 const DB_NAME = 'destajos';
 const DB_VERSION = 1; // 👈 subimos versión para forzar recreación
 const STORE_QUEUE = 'queue';
-// const STORE_EMPLEADOS = 'GH_Empleados';
-// const STORE_DESTAJOS = 'GH_Destajos';
-// const STORE_USUARIOS = 'users';
+const STORE_EMPLEADOS = 'GH_Empleados';
+const STORE_DESTAJOS = 'GH_Destajos';
+const STORE_USUARIOS = 'users';
 
 function initDB(){
   return new Promise((resolve, reject) => {
@@ -22,10 +22,28 @@ function initDB(){
     request.onupgradeneeded = (event) => {
       db = event.target.result;
 
-      // Store queue
+      // --- Store queue (pendientes de sincronización) ---
       if (!db.objectStoreNames.contains(STORE_QUEUE)) {
         db.createObjectStore(STORE_QUEUE, { keyPath: 'local_id', autoIncrement: true });
         console.log("🗂️ Store creada:", STORE_QUEUE);
+      }
+
+      // --- Store usuarios (para login offline) ---
+      if (!db.objectStoreNames.contains(STORE_USUARIOS)) {
+        db.createObjectStore(STORE_USUARIOS, { keyPath: "id" });
+        console.log("🗂️ Store creada:", STORE_USUARIOS);
+      }
+
+      // --- Store empleados ---
+      if (!db.objectStoreNames.contains(STORE_EMPLEADOS)) {
+        db.createObjectStore(STORE_EMPLEADOS, { keyPath: "numeroDocumento" });
+        console.log("🗂️ Store creada:", STORE_EMPLEADOS);
+      }
+
+      // --- Store destajos ---
+      if (!db.objectStoreNames.contains(STORE_DESTAJOS)) {
+        db.createObjectStore(STORE_DESTAJOS, { keyPath: "Id" });
+        console.log("🗂️ Store creada:", STORE_DESTAJOS);
       }
     }
   })
@@ -49,16 +67,6 @@ async function idbAdd(db, store, value) {
     req.onerror   = (e) => reject(e.target.error);
   });
 }
-
-// async function idbAddMany(db, storeName, data) {
-//   return new Promise((resolve, reject) => {
-//     const tx = db.transaction(storeName, "readwrite");
-//     const store = tx.objectStore(storeName);
-//     data.forEach(item => store.put(item));
-//     tx.oncomplete = () => resolve();
-//     tx.onerror = (e) => reject(e.target.error);
-//   });
-// }
 
 async function idbGetAll(db, store) {
   return new Promise((resolve, reject) => {
@@ -98,31 +106,63 @@ async function idbDelete(db, store, key) {
 
 const API = {
   async get(url){
-    const r = await fetch(url, {credentials:'same-origin'});
-    if(!r.ok) throw new Error('Error API');
-    return r.json();
+    try {
+      const r = await fetch(url, { credentials:'same-origin' });
+      if(!r.ok) {
+        const text = await r.text();
+        throw new Error(`Error API GET ${url}: ${r.status} ${r.statusText} - ${text}`);
+      }
+      return r.json();
+    } catch(e){
+      // Si fetch falla por conexión offline u otro error
+      throw new Error(`Error API GET ${url}: ${e.message}`);
+    }
   },
   async post(url, data){
-    const r = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
-      body: JSON.stringify(data)
-    });
-    return r.json();
+    try {
+      const r = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+        body: JSON.stringify(data)
+      });
+      if(!r.ok) {
+        const text = await r.text();
+        throw new Error(`Error API POST ${url}: ${r.status} ${r.statusText} - ${text}`);
+      }
+      return r.json();
+    } catch(e){
+      throw new Error(`Error API POST ${url}: ${e.message}`);
+    }
   },
   async put(url, data){
-    const r = await fetch(url, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
-      body: JSON.stringify(data)
-    });
-    return r.json();
+    try {
+      const r = await fetch(url, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+        body: JSON.stringify(data)
+      });
+      if(!r.ok) {
+        const text = await r.text();
+        throw new Error(`Error API PUT ${url}: ${r.status} ${r.statusText} - ${text}`);
+      }
+      return r.json();
+    } catch(e){
+      throw new Error(`Error API PUT ${url}: ${e.message}`);
+    }
   },
   async del(url){
-    const r = await fetch(url, {method:'DELETE', credentials:'same-origin'});
-    return r.json();
+    try {
+      const r = await fetch(url, { method:'DELETE', credentials:'same-origin' });
+      if(!r.ok) {
+        const text = await r.text();
+        throw new Error(`Error API DELETE ${url}: ${r.status} ${r.statusText} - ${text}`);
+      }
+      return r.json();
+    } catch(e){
+      throw new Error(`Error API DELETE ${url}: ${e.message}`);
+    }
   }
 };
 
@@ -149,30 +189,40 @@ window.destajosForm = function(){
     status: '',
     errores: {},   // 👈 aquí guardamos los errores
 
+     async init() {
+      // Detecta si hay internet o no
+      if (navigator.onLine) {
+        this.empleados = await fetch('/api/empleados').then(r => r.json());
+        this.destajos = await fetch('/api/mdestajos').then(r => r.json());
+      } else {
+        const db = await openIndexedDB(); // tu función que abre IndexedDB
+        this.empleados = await idbGetAll(db, 'GH_Empleados');
+        this.destajos = await idbGetAll(db, 'GH_Destajos');
+      }
+    },
+
+    asignarDocumento() {
+      if (!this.empleado_nombre) {  
+        this.empleado_documento = '';
+        return;
+      }
+
+      const e = this.empleados.find(x => {
+        if (!x.nombreCompleto || !x.apellidoCompleto) return false;
+        const fullName = `${x.nombreCompleto} ${x.apellidoCompleto}`.trim().toLowerCase();
+        return fullName === this.empleado_nombre.trim().toLowerCase();
+      });
+
+      this.empleado_documento = e ? e.numeroDocumento : '';
+    },
+
     validar() {
-      this.errores = {}; // limpiar errores
-
-      if (!this.empleado_nombre.trim()) {
-        this.errores.empleado_nombre = "Debe seleccionar un empleado.";
-      }
-
-      if (!this.empleado_documento.trim()) {
-        this.errores.empleado_documento = "No se asignó documento al empleado.";
-      }
-
-      if (!this.destajo_text.trim() || !this.destajo_id) {
-        this.errores.destajo = "Debe seleccionar un destajo válido.";
-      }
-
-      if (!this.cantidad || this.cantidad < 1) {
-        this.errores.cantidad = "La cantidad debe ser mayor o igual a 1.";
-      }
-
-      if (!this.fecha) {
-        this.errores.fecha = "Debe seleccionar una fecha.";
-      }
-
-      // Devuelve true si no hay errores
+      this.errores = {};
+      if (!this.empleado_nombre.trim()) this.errores.empleado_nombre = "Debe seleccionar un empleado.";
+      if (!this.empleado_documento.trim()) this.errores.empleado_documento = "No se asignó documento al empleado.";
+      if (!this.destajo_id) this.errores.destajo = "Debe seleccionar un destajo válido.";
+      if (!this.cantidad || this.cantidad < 1) this.errores.cantidad = "La cantidad debe ser mayor o igual a 1.";
+      if (!this.fecha) this.errores.fecha = "Debe seleccionar una fecha.";
       return Object.keys(this.errores).length === 0;
     },
 
@@ -186,36 +236,32 @@ window.destajosForm = function(){
         const res = await fetch(`/api/employees?q=${encodeURIComponent(q)}`);
         if (!res.ok) throw new Error("HTTP error " + res.status);
         const data = await res.json();
+        
+        if (Array.isArray(data)){
+          this.empleados = data;
 
-        this.empleados = data;
+          const seleccionado = data.find(e =>
+            e.nombre?.trim().toLowerCase() === this.empleado_nombre?.trim().toLowerCase()
+          );
 
-        const seleccionado = data.find(e =>
-          e.nombre?.trim().toLowerCase() === this.empleado_nombre?.trim().toLowerCase()
-        );
-
-        if (seleccionado) {
-          this.empleado_documento = seleccionado.documento;
+          if (seleccionado) {
+            this.empleado_documento = seleccionado.documento;
+          }
+        } else {
+          console.warn("⚠️ Respuesta inesperada de /api/employees:", data);
+          this.empleados = [];
         }
+        
       } catch (err) {
         console.error("⚠️ Error buscando empleado", err);
         this.status = "Error al buscar empleado";
       }
     },
 
-    asignarDocumento() {
-      if (!this.empleados || this.empleados.length === 0) return;
-
-      const seleccionado = this.empleados.find(e =>
-        e.nombre.trim().toLowerCase() === this.empleado_nombre.trim().toLowerCase()
-      );
-
-      if (seleccionado) {
-        this.empleado_documento = seleccionado.documento;
-        console.log("🆔 Documento asignado:", this.empleado_documento);
-      } else {
-        this.empleado_documento = '';
-        console.log("❌ No se encontró documento para:", this.empleado_nombre);
-      }
+    asignarDestajo() {
+        // Busca en la lista de destajos por el texto ingresado
+        const d = this.destajos.find(x => x.Concepto.toLowerCase() === this.destajo_text.trim().toLowerCase());
+        this.destajo_id = d ? d.Id : null;  // <-- Aquí se asigna destajo_id
     },
 
     async searchDestajo(){
@@ -228,20 +274,15 @@ window.destajosForm = function(){
       } catch(e){}
     },
 
-    async submit(){
-
-      if (!this.validar()) {
-        this.status = "⚠️ Corrige los errores antes de guardar.";
-        return;
-      }
-
+    async submit() {
+      if(!this.validar()){ this.status="Corrige errores"; return; }
       const payload = {
         empleado_documento: this.empleado_documento,
         empleado_nombre: this.empleado_nombre,
         destajo_id: this.destajo_id,
         cantidad: this.cantidad,
         fecha: this.fecha,
-        _edit: false 
+        _edit: false
       };
 
       const db = await initDB();
@@ -538,47 +579,6 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('destajosForm', destajosForm);
 });
 
-// async function loginOffline(username, password) {
-//     const db = await initDB(); // tu función initDB()
-//     const tx = db.transaction('users', 'readonly');
-//     const store = tx.objectStore('users');
-//     const users = await store.getAll();
-
-//     const user = users.find(u => u.username === username && u.password === password);
-//     if(user){
-//         // Guardar sesión offline
-//         localStorage.setItem('currentUser', JSON.stringify(user));
-//         alert("✅ Login offline exitoso");
-//         return true;
-//     } else {
-//         alert("❌ Usuario o contraseña incorrecta");
-//         return false;
-//     }
-// }
-
-// Para online, llamas a la API Flask normalmente
-// async function loginOnline(username, password) {
-//     try {
-//         const res = await fetch("/auth/login", {
-//             method: "POST",
-//             headers: {"Content-Type": "application/json"},
-//             body: JSON.stringify({username, password})
-//         });
-//         const data = await res.json();
-//         if(data.success){
-//             localStorage.setItem('currentUser', JSON.stringify(data.user));
-//             alert("✅ Login online exitoso");
-//             return true;
-//         } else {
-//             alert("❌ Usuario o contraseña incorrecta");
-//             return false;
-//         }
-//     } catch(e){
-//         console.warn("⚠️ No hay conexión, usando IndexedDB");
-//         return loginOffline(username, password);
-//     }
-// }
-
 async function handleLogin() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -605,6 +605,86 @@ if(getCurrentUser()){
     console.log("Usuario logueado:", getCurrentUser().username);
 } else {
     console.log("No hay usuario logueado");
+}
+
+async function loginOffline(username, password) {
+    const db = await initDB();
+    const usuarios = await idbGetAll(db, STORE_USUARIOS);
+
+    const user = usuarios.find(u => u.username === username && u.password === password);
+    if(user){
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return true;
+    }
+    return false;
+}
+
+async function loginOnline(username, password) {
+    if(navigator.onLine){
+        try {
+            const res = await API.post('/api/login', { username, password });
+            if(res.success){
+                localStorage.setItem('currentUser', JSON.stringify(res.user));
+                await syncTables(); // sincroniza tablas al loguearse
+                return true;
+            }
+        } catch(e){
+            console.warn('⚠️ Login online falló, probando offline', e);
+        }
+    }
+
+    // fallback offline
+    return await loginOffline(username, password);
+}
+
+window.addEventListener('load', async () => {
+    await initDB();
+    if(navigator.onLine){
+        await syncTables();
+    }
+});
+
+async function syncTables() {
+    if (!navigator.onLine) return; // solo online
+    const db = await initDB();
+
+    try {
+        // Traer usuarios
+        let usuarios = [];
+        try { usuarios = await API.get('/api/users'); } 
+        catch(e){ console.warn("⚠️ No se pudo sincronizar users", e); }
+
+        // Traer empleados
+        let empleados = [];
+        try { empleados = await API.get('/api/empleados'); } 
+        catch(e){ console.warn("⚠️ No se pudo sincronizar empleados", e); }
+
+        // Traer destajos
+        let destajos = [];
+        try { destajos = await API.get('/api/mdestajos'); } 
+        catch(e){ console.warn("⚠️ No se pudo sincronizar destajos", e); }
+
+        // Limpiar e insertar solo lo que se trajo
+        if(usuarios.length){
+            await idbClear(db, STORE_USUARIOS);
+            for(const u of usuarios) await idbAdd(db, STORE_USUARIOS, u);
+        }
+
+        if(empleados.length){
+            await idbClear(db, STORE_EMPLEADOS);
+            for(const e of empleados) await idbAdd(db, STORE_EMPLEADOS, e);
+        }
+
+        if(destajos.length){
+            await idbClear(db, STORE_DESTAJOS);
+            for(const d of destajos) await idbAdd(db, STORE_DESTAJOS, d);
+        }
+
+        console.log('✅ Tablas locales sincronizadas (las que pudieron cargarse)');
+
+    } catch (e) {
+        console.error('❌ Error general sincronizando tablas locales', e);
+    }
 }
 
 
