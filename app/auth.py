@@ -27,7 +27,6 @@ def admin_required(f):
 
 # Listado de usuarios (solo admins)
 @auth_bp.route("/usuarios")
-@admin_required
 def listado():
     users = User.query.order_by(User.id).all()
     return render_template("usuarios_listado.html", users=users)

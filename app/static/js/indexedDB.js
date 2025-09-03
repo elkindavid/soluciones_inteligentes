@@ -104,67 +104,7 @@ async function idbDelete(db, store, key) {
   });
 }
 
-const API = {
-  async get(url){
-    try {
-      const r = await fetch(url, { credentials:'same-origin' });
-      if(!r.ok) {
-        const text = await r.text();
-        throw new Error(`Error API GET ${url}: ${r.status} ${r.statusText} - ${text}`);
-      }
-      return r.json();
-    } catch(e){
-      // Si fetch falla por conexión offline u otro error
-      throw new Error(`Error API GET ${url}: ${e.message}`);
-    }
-  },
-  async post(url, data){
-    try {
-      const r = await fetch(url, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'same-origin',
-        body: JSON.stringify(data)
-      });
-      if(!r.ok) {
-        const text = await r.text();
-        throw new Error(`Error API POST ${url}: ${r.status} ${r.statusText} - ${text}`);
-      }
-      return r.json();
-    } catch(e){
-      throw new Error(`Error API POST ${url}: ${e.message}`);
-    }
-  },
-  async put(url, data){
-    try {
-      const r = await fetch(url, {
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        credentials:'same-origin',
-        body: JSON.stringify(data)
-      });
-      if(!r.ok) {
-        const text = await r.text();
-        throw new Error(`Error API PUT ${url}: ${r.status} ${r.statusText} - ${text}`);
-      }
-      return r.json();
-    } catch(e){
-      throw new Error(`Error API PUT ${url}: ${e.message}`);
-    }
-  },
-  async del(url){
-    try {
-      const r = await fetch(url, { method:'DELETE', credentials:'same-origin' });
-      if(!r.ok) {
-        const text = await r.text();
-        throw new Error(`Error API DELETE ${url}: ${r.status} ${r.statusText} - ${text}`);
-      }
-      return r.json();
-    } catch(e){
-      throw new Error(`Error API DELETE ${url}: ${e.message}`);
-    }
-  }
-};
+const API = { async get(url){ const r = await fetch(url, {credentials:'same-origin'}); if(!r.ok) throw new Error('Error API'); return r.json(); }, async post(url, data){ const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) }); return r.json(); }, async put(url, data){ const r = await fetch(url, { method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) }); return r.json(); }, async del(url){ const r = await fetch(url, {method:'DELETE', credentials:'same-origin'}); return r.json(); } };
 
 function todayISO(){
   const d = new Date();
@@ -579,22 +519,6 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('destajosForm', destajosForm);
 });
 
-async function handleLogin() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-
-    // Llama primero loginOnline, que caerá a loginOffline si no hay conexión
-    const success = await loginOnline(username, password);
-
-    if(success){
-        console.log("Usuario logueado:", getCurrentUser());
-        // Redirigir a la app o actualizar UI
-        window.location.href = "/"; 
-    } else {
-        console.log("Login fallido");
-    }
-}
-
 function getCurrentUser() {
     const user = localStorage.getItem('currentUser');
     return user ? JSON.parse(user) : null;
@@ -607,34 +531,71 @@ if(getCurrentUser()){
     console.log("No hay usuario logueado");
 }
 
+async function handleLogin() {
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    if (!usernameInput || !passwordInput) {
+        console.error("No se encontraron los campos de login.");
+        return;
+    }
+
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    let success = false;
+
+    if (navigator.onLine) {
+        // Solo si hay internet intento login online
+        success = await loginOnline(username, password);
+        if (!success) {
+            console.warn("⚠️ Falló login online, probando offline...");
+            success = await loginOffline(username, password);
+        }
+    } else {
+        // Sin internet, directo a offline
+        success = await loginOffline(username, password);
+    }
+
+    if (success) {
+        console.log("✅ Usuario logueado:", getCurrentUser());
+        window.location.href = "/";
+    } else {
+        console.log("❌ Login fallido");
+        alert("Usuario o contraseña incorrectos (ni online ni offline).");
+    }
+}
+
 async function loginOffline(username, password) {
     const db = await initDB();
     const usuarios = await idbGetAll(db, STORE_USUARIOS);
 
-    const user = usuarios.find(u => u.username === username && u.password === password);
-    if(user){
-        localStorage.setItem('currentUser', JSON.stringify(user));
+    const hashed = await hashPassword(password);
+
+
+    const user = usuarios.find(
+        u => u.username === username && u.password === hashed
+    );
+
+    if (user) {
+        localStorage.setItem("currentUser", JSON.stringify(user));
         return true;
     }
     return false;
 }
 
 async function loginOnline(username, password) {
-    if(navigator.onLine){
-        try {
-            const res = await API.post('/api/login', { username, password });
-            if(res.success){
-                localStorage.setItem('currentUser', JSON.stringify(res.user));
-                await syncTables(); // sincroniza tablas al loguearse
-                return true;
-            }
-        } catch(e){
-            console.warn('⚠️ Login online falló, probando offline', e);
+    try {
+        const res = await API.post("/api/login", { username, password });
+        if (res.success) {
+            localStorage.setItem("currentUser", JSON.stringify(res.user));
+            await syncTables();
+            return true;
         }
+    } catch (e) {
+        console.warn("⚠️ Error en login online:", e.message);
     }
-
-    // fallback offline
-    return await loginOffline(username, password);
+    return false;
 }
 
 window.addEventListener('load', async () => {
@@ -644,48 +605,84 @@ window.addEventListener('load', async () => {
     }
 });
 
+async function syncTable(db, storeName, apiEndpoint, key = "id") {
+    let remoteData;
+    try {
+        remoteData = await API.get(apiEndpoint);
+
+        // Si la respuesta no es un array válido → abortar
+        if (!Array.isArray(remoteData)) {
+            console.warn(`⚠️ ${storeName}: respuesta inválida del server`);
+            return;
+        }
+
+    } catch (e) {
+        console.warn(`⚠️ No se pudo sincronizar ${storeName}`, e);
+        return; // ❌ no borres lo local si hubo error
+    }
+
+    // Si viene vacío explícitamente, entonces sí limpiar
+    if (remoteData.length === 0) {
+        console.info(`ℹ️ ${storeName}: servidor reporta tabla vacía`);
+        await idbClear(db, storeName);
+        return;
+    }
+
+    // 1. Obtener datos locales
+    const localData = await idbGetAll(db, storeName);
+    const localIds = new Set(localData.map(item => item[key]));
+
+    // 2. Upsert
+    for (const item of remoteData) {
+        await idbPut(db, storeName, item);
+        localIds.delete(item[key]);
+    }
+
+    // 3. Borrar los que ya no existen en el server
+    for (const id of localIds) {
+        await idbDelete(db, storeName, id);
+    }
+
+    console.log(`✅ ${storeName} sincronizado (${remoteData.length} registros)`);
+}
+
 async function syncTables() {
     if (!navigator.onLine) return; // solo online
     const db = await initDB();
 
     try {
-        // Traer usuarios
-        let usuarios = [];
-        try { usuarios = await API.get('/auth/users'); } 
-        catch(e){ console.warn("⚠️ No se pudo sincronizar users", e); }
+        await syncTable(db, STORE_USUARIOS, "/auth/users");
+        await syncTable(db, STORE_EMPLEADOS, "/api/empleados");
+        await syncTable(db, STORE_DESTAJOS, "/api/mdestajos");
 
-        // Traer empleados
-        let empleados = [];
-        try { empleados = await API.get('/api/empleados'); } 
-        catch(e){ console.warn("⚠️ No se pudo sincronizar empleados", e); }
-
-        // Traer destajos
-        let destajos = [];
-        try { destajos = await API.get('/api/mdestajos'); } 
-        catch(e){ console.warn("⚠️ No se pudo sincronizar destajos", e); }
-
-        // Limpiar e insertar solo lo que se trajo
-        if(usuarios.length){
-            await idbClear(db, STORE_USUARIOS);
-            for(const u of usuarios) await idbAdd(db, STORE_USUARIOS, u);
-        }
-
-        if(empleados.length){
-            await idbClear(db, STORE_EMPLEADOS);
-            for(const e of empleados) await idbAdd(db, STORE_EMPLEADOS, e);
-        }
-
-        if(destajos.length){
-            await idbClear(db, STORE_DESTAJOS);
-            for(const d of destajos) await idbAdd(db, STORE_DESTAJOS, d);
-        }
-
-        console.log('✅ Tablas locales sincronizadas (las que pudieron cargarse)');
-
+        console.log("✅ Tablas locales sincronizadas inteligentemente");
     } catch (e) {
-        console.error('❌ Error general sincronizando tablas locales', e);
+        console.error("❌ Error general sincronizando tablas locales", e);
     }
 }
+
+function openIndexedDB(dbName, version) {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, version);
+
+        request.onsuccess = (event) => {
+            resolve(event.target.result);
+        };
+
+        request.onerror = (event) => {
+            reject(event.target.error);
+        };
+    });
+}
+
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 
 
 window.initDB = initDB;
