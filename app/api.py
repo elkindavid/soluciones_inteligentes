@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, send_file
 from flask_login import login_required, current_user
 from sqlalchemy import text
 from .extensions import db
 from .models import RegistroDestajo
 from datetime import datetime, date
 from .models import User, GHDestajo, GHEmpleado
+import pandas as pd
+from io import BytesIO
+from openpyxl.utils import get_column_letter
 
 api_bp = Blueprint("api", __name__)
 
@@ -192,3 +195,152 @@ def get_destajos():
         return jsonify(destajos_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+from io import BytesIO
+import pandas as pd
+from sqlalchemy import text
+from datetime import date
+from flask import current_app
+
+from flask import send_file, request, current_app
+from sqlalchemy.sql import text
+from io import BytesIO
+import pandas as pd
+from datetime import date
+from openpyxl.styles import numbers
+
+@api_bp.get("/liquidacion/excel")
+@login_required
+def liquidacion_excel():
+    doc = request.args.get('documento')
+    f1 = request.args.get('desde')
+    f2 = request.args.get('hasta')
+
+    params = {}
+    sql = """
+    SELECT
+      CASE 
+            WHEN LEFT(e.tipoIdentificacion,11)='Cédula Ciud' THEN 'C'
+            WHEN LEFT(e.tipoIdentificacion,11)='Cédula de E' THEN 'E'
+            WHEN LEFT(e.tipoIdentificacion,11)='Permiso Por' THEN 'PT'
+            ELSE e.tipoIdentificacion END AS TipoDocumento,
+      r.empleado_documento AS NumeroDocumento,
+      d.Concepto,
+      e.centroCosto AS AreaFuncional,
+      r.cantidad AS Cantidad,
+      ISNULL(d.Valor,0) AS Valor
+    FROM registros_destajo r
+    JOIN GH_Empleados e ON e.numeroDocumento = r.empleado_documento
+    JOIN GH_Destajos d ON d.Id = r.destajo_id
+    WHERE 1=1
+    """
+
+    if f1:
+        sql += " AND r.fecha >= :f1"
+        params['f1'] = date.fromisoformat(f1)
+    if f2:
+        sql += " AND r.fecha <= :f2"
+        params['f2'] = date.fromisoformat(f2)
+    if doc:
+        sql += " AND r.empleado_documento = :doc"
+        params['doc'] = doc
+
+    rows = db.session.execute(text(sql), params).mappings().all()
+    df = pd.DataFrame(rows)
+
+    cols = [
+      "TipoRegistro","TipoDocumento","NumeroDocumento","Concepto","TipoNovedad","TipoReporte",
+      "ValorTotal","IncluyePago","SumaResta","FechaInicial","CantidadDias",
+      "TipoIncapacidad","Diagnostico","NumeroIncapacidad","FechaRetiro","MotivoRetiro",
+      "AreaFuncional","RangoDiaInicial","RangoHoraInicial","RangoHoraFinal","NumeroDias",
+      "Cantidad","NumeroHoras","Indemnizacion","FechaNovedad","PagoTotal",
+      "NaturalezaIncapacidad","FechaInicialEPS","Proyecto","FechaRetiroReal","Gobierno1","Gobierno2",
+      "FechaIniIncPro","TipoDocEntidad","NumDocEntidad","TipoServicioEntidad",
+      "IncapacidadDiasHab","Observaciones","Docentes"
+    ]
+
+    if df.empty:
+        df_out = pd.DataFrame(columns=cols)
+    else:
+        df['Cantidad'] = pd.to_numeric(df['Cantidad'], errors='coerce').fillna(0)
+        df['Valor'] = pd.to_numeric(df['Valor'], errors='coerce').fillna(0)
+
+        SMV = current_app.config.get('AAA', 47450)
+
+        df_group = df.groupby(['TipoDocumento','NumeroDocumento','Concepto','AreaFuncional'], as_index=False).agg({
+            'Cantidad':'sum',
+            'Valor':'mean'  # valor unitario
+        })
+
+        df_no_desc = df[~df['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True)]
+        ponderado = (
+            df_no_desc
+            .assign(vxq=lambda x: x['Valor']*x['Cantidad'])
+            .groupby('NumeroDocumento')
+            .agg({'vxq':'sum','Cantidad':'sum'})
+        )
+        ponderado['PromPond'] = ponderado['vxq']/ponderado['Cantidad']
+        prom_map = ponderado['PromPond'].to_dict()
+
+        def calc_valor_total(row):
+            concepto = (row.get('Concepto') or '').upper()
+            qty = float(row.get('Cantidad',0))
+            val = float(row.get('Valor',0))
+            numdoc = row.get('NumeroDocumento')
+
+            if 'JORNAL FESTIVO' in concepto:
+                return SMV * 1.8 * qty
+            if 'JORNAL' in concepto:
+                return SMV * qty
+            if 'DESCANSO' in concepto:
+                prom = prom_map.get(numdoc,0)
+                return prom * qty
+            return ""
+
+        df_group['ValorTotal'] = df_group.apply(calc_valor_total, axis=1)
+        df_group['TipoNovedad'] = df_group['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True).map(lambda x: 4 if x else 3)
+        df_group['TipoRegistro'] = 1
+        df_group['TipoReporte'] = 5
+        df_group['FechaNovedad'] = f2 if f2 else ""
+
+        df_group['IncluyePago'] = df_group['TipoNovedad'].apply(lambda x: 'Y' if x == 4 else '')
+        df_group['SumaResta']   = df_group['TipoNovedad'].apply(lambda x: 1 if x == 4 else '')
+
+        for c in ["FechaInicial","CantidadDias","TipoIncapacidad","Diagnostico","NumeroIncapacidad",
+                  "FechaRetiro","MotivoRetiro","RangoDiaInicial","RangoHoraInicial","RangoHoraFinal",
+                  "NumeroDias","NumeroHoras","Indemnizacion","PagoTotal","NaturalezaIncapacidad",
+                  "FechaInicialEPS","Proyecto","FechaRetiroReal","Gobierno1","Gobierno2",
+                  "FechaIniIncPro","TipoDocEntidad","NumDocEntidad","TipoServicioEntidad",
+                  "IncapacidadDiasHab","Observaciones","Docentes"]:
+            df_group[c] = ""
+
+        df_out = df_group[cols]
+
+    # --- generar excel y ajustar columnas ---
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_out.to_excel(writer, index=False, sheet_name="Liquidacion")
+        ws = writer.sheets["Liquidacion"]
+
+        for col_idx, column_title in enumerate(df_out.columns, start=1):
+            col_letter = get_column_letter(col_idx)
+            col_cells = ws[col_letter]
+            max_length = max((len(str(c.value)) for c in col_cells if c.value is not None), default=len(column_title))
+            ws.column_dimensions[col_letter].width = max_length + 2
+
+            # Formato moneda en ValorTotal
+            if column_title == 'ValorTotal':
+                for c in col_cells[1:]:  # datos, sin cabecera
+                    c.number_format = '$ #,##0.00'
+
+    output.seek(0)
+    return send_file(
+        output,
+        download_name="liquidacion.xlsx",
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+
+

@@ -293,6 +293,25 @@ window.consultarView = function(){
       }
     },
 
+    async exportarLiquidacion() {
+      const params = new URLSearchParams();
+      if (this.documento) params.append('documento', this.documento);
+      if (this.desde) params.append('desde', this.desde);
+      if (this.hasta) params.append('hasta', this.hasta);
+
+      const res = await fetch(`/api/liquidacion/excel?${params.toString()}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'liquidacion.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    },
+
     async buscar() {
       if (!this.ready) return;
 
