@@ -1,6 +1,5 @@
-const CACHE_NAME = "destajos-cache-v9";
+const CACHE_NAME = "destajos-cache-v12";
 const PRECACHE_URLS = [
-  "/",
   "/static/css/tailwind.min.css",
   "/static/images/logo-192.png",
   "/static/images/logo-512.png",
@@ -14,7 +13,9 @@ const PRECACHE_URLS = [
   "/static/offline.html"
 ];
 
-// Instalación
+// ---------------------------
+// Instalación: cachear recursos estáticos
+// ---------------------------
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -27,10 +28,12 @@ self.addEventListener("install", event => {
   );
 });
 
-// Activación
+// ---------------------------
+// Activación: limpiar caches antiguas
+// ---------------------------
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => 
+    caches.keys().then(keys =>
       Promise.all(
         keys.filter(key => key !== CACHE_NAME)
             .map(key => caches.delete(key))
@@ -39,28 +42,38 @@ self.addEventListener("activate", event => {
   );
 });
 
+// ---------------------------
+// Fetch: manejo de rutas
+// ---------------------------
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
 
-  // No interceptar login/logout (lo atiende el navegador normal)
-  if (url.pathname === "/auth/login" || url.pathname === "/auth/logout") {
-    return;
-  }
+  // No interceptar rutas de login/logout ni la raíz
+  if (url.pathname === "/" || url.pathname === "/auth/login" || url.pathname === "/auth/logout") return;
 
   event.respondWith(
-    fetch(event.request, { redirect: "follow" }).catch(() => {
-      if (event.request.destination === "document") {
-        return caches.match("/static/offline.html", { ignoreSearch: true });
-      }
-      if (event.request.destination === "image") {
-        return caches.match("/static/images/fallback.png", { ignoreSearch: true });
-      }
-      return new Response("Sin conexión y recurso no disponible en caché", {
-        status: 503,
-        headers: { "Content-Type": "text/plain" }
-      });
-    })
+    fetch(event.request)
+      .then(response => {
+        // Si el recurso es un redirect, no interferir
+        if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+          return response; // dejar que el navegador lo maneje
+        }
+        return response;
+      })
+      .catch(() => {
+        // Fallback para HTML
+        if (event.request.destination === "document") {
+          return caches.match("/static/offline.html");
+        }
+        // Fallback para imágenes
+        if (event.request.destination === "image") {
+          return caches.match("/static/images/fallback.png");
+        }
+        // Otros recursos: mensaje de error
+        return new Response("Sin conexión y recurso no disponible en caché", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" }
+        });
+      })
   );
 });
-
-
