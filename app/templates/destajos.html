@@ -15,6 +15,17 @@
       <h2 class="text-xl font-semibold mb-4">Nuevo registro</h2>
       <form @submit.prevent="submit()" class="grid md:grid-cols-2 gap-4">
         
+        <!-- Planta -->
+        <div>
+          <label class="block text-sm">Planta</label>
+          <select x-model="planta" @change="onPlantaChange()" class="w-full border rounded p-2">
+            <template x-for="(p, idx) in plantas" :key="p.Planta ?? p">
+              <option :value="p.Planta ?? p" x-text="p.Planta ?? p"></option>
+            </template>
+          </select>
+          <span class="text-red-500 text-sm" x-text="errores.planta"></span>
+        </div>
+
         <!-- Empleado -->
         <div>
           <label class="block text-sm">Empleado (nombre)</label>
@@ -23,8 +34,8 @@
                  list="listaEmpleados"
                  class="w-full border rounded p-2">
           <datalist id="listaEmpleados">
-            <template x-for="(e, index) in empleados" :key="e.numeroDocumento || index">
-              <option :value="e.nombreCompleto + ' ' + e.apellidoCompleto"></option>
+            <template x-for="(e, index) in empleados" :key="e.documento || index">
+              <option :value="e.nombre"></option>
             </template>
           </datalist>
           <span class="text-red-500 text-sm" x-text="errores.empleado_nombre"></span>
@@ -47,8 +58,8 @@
                  list="listaDestajos"
                  class="w-full border rounded p-2">
           <datalist id="listaDestajos">
-            <template x-for="(d, index) in destajos" :key="d.Id || index">
-              <option :value="d.Concepto"></option>
+            <template x-for="(d, index) in destajos" :key="d.id || index">
+              <option :value="d.concepto"></option>
             </template>
           </datalist>
           <span class="text-red-500 text-sm" x-text="errores.destajo"></span>
@@ -57,7 +68,7 @@
         <!-- Cantidad -->
         <div>
           <label class="block text-sm">Cantidad</label>
-          <input type="number" step="1" min="1"
+          <input type="number" step="0.1" min="1"
                  x-model.number="cantidad"
                  class="w-full border rounded p-2">
           <span class="text-red-500 text-sm" x-text="errores.cantidad"></span>
@@ -82,6 +93,19 @@
             class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 w-28 text-center">
             Buscar
           </a>
+          
+          <!-- chulo verde -->
+          <span
+            x-show="showSuccess"
+            x-transition
+            class="inline-flex items-center text-green-600 text-sm font-medium"
+          >
+            <svg class="w-5 h-5 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 13l4 4L19 7" />
+            </svg>
+            Guardado
+          </span>
 
           <span class="ml-3 text-sm text-gray-500" x-text="status"></span>
         </div>

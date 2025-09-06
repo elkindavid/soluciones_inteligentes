@@ -1,9 +1,10 @@
 let db = null;
 const DB_NAME = 'destajos';
-const DB_VERSION = 12; // 👈 subimos versión para forzar recreación
+const DB_VERSION = 13; // 👈 subimos versión para forzar recreación
 const STORE_QUEUE = 'queue';
 const STORE_EMPLEADOS = 'GH_Empleados';
 const STORE_DESTAJOS = 'GH_Destajos';
+const STORE_PLANTAS = 'GH_Plantas';   // <- nuevo
 const STORE_USUARIOS = 'users';
 
 function initDB(){
@@ -44,6 +45,13 @@ function initDB(){
       if (!db.objectStoreNames.contains(STORE_DESTAJOS)) {
         db.createObjectStore(STORE_DESTAJOS, { keyPath: "Id" });
         console.log("🗂️ Store creada:", STORE_DESTAJOS);
+      }
+
+      // --- Store plantas ---
+      if (!db.objectStoreNames.contains(STORE_PLANTAS)) {
+        // Guardaremos la lista como objetos { Planta: 'Nombre' } con keyPath 'Planta'
+        db.createObjectStore(STORE_PLANTAS, { keyPath: "Planta" });
+        console.log("🗂️ Store creada:", STORE_PLANTAS);
       }
     }
   })
@@ -118,6 +126,8 @@ function todayISO(){
 // ==============================
 window.destajosForm = function(){
   return {
+    plantas: [],           // <-- lista de plantas
+    planta: '',            // <-- planta seleccionada
     empleados: [],
     destajos: [],
     empleado_nombre: '',
@@ -128,17 +138,90 @@ window.destajosForm = function(){
     fecha: todayISO(),
     status: '',
     errores: {},   // 👈 aquí guardamos los errores
+    showSuccess: false,   // nuevo estado para mostrar el chulo verde
 
      async init() {
       // Detecta si hay internet o no
       if (navigator.onLine) {
+         // obtener listados filtrados por defecto (sin planta)
+        this.plantas = await fetch('/api/plantas').then(r => r.json());
         this.empleados = await fetch('/api/empleados').then(r => r.json());
         this.destajos = await fetch('/api/mdestajos').then(r => r.json());
       } else {
         const db = await openIndexedDB(); // tu función que abre IndexedDB
-        this.empleados = await idbGetAll(db, 'GH_Empleados');
-        this.destajos = await idbGetAll(db, 'GH_Destajos');
+        this.plantas = await idbGetAll(db, STORE_PLANTAS);
+        this.empleados = await idbGetAll(db, STORE_EMPLEADOS);
+        this.destajos = await idbGetAll(db, STORE_DESTAJOS);
       }
+
+      // ✅ Tomar la primera planta automáticamente
+      if (this.plantas.length > 0) {
+        // si tus plantas vienen como {Planta:'X'}, toma el campo
+        this.planta = this.plantas[0].Planta ?? this.plantas[0];
+      }
+
+      // cargar empleados/destajos ya filtrados
+      await this.onPlantaChange();
+
+    },
+
+    // Llamar cuando el select de planta cambie
+    async onPlantaChange() {
+      // limpiar asignaciones que ya no correspondan
+      this.empleado_documento = '';
+      this.destajo_id = null;
+      this.destajo_text = '';
+
+      if (navigator.onLine) {
+        await this.fetchEmpleadosFiltered();
+        await this.fetchDestajosFiltered();
+      } else {
+        // filtrar arrays locales de IndexedDB
+        const db = await openIndexedDB(DB_NAME, DB_VERSION);
+        const localEmps = await idbGetAll(db, STORE_EMPLEADOS);
+        const localDest = await idbGetAll(db, STORE_DESTAJOS);
+
+        const planta = (this.planta || '').trim();
+
+        // empleados: agrupador4 LIKE %planta%  (si planta vacía => todos)
+        if (!planta) {
+          this.empleados = localEmps;
+        } else {
+          this.empleados = localEmps.filter(e => {
+            if (!e.agrupador4) return false;
+            return e.agrupador4.includes(planta) || planta === 'TODAS';
+          });
+        }
+
+        // destajos: d.Planta == planta OR d.Planta == 'TODAS'
+        if (!planta) {
+          this.destajos = localDest;
+        } else {
+          this.destajos = localDest.filter(d => {
+            const dp = (d.Planta || '').trim();
+            return dp === planta || dp === 'TODAS' || planta === 'TODAS';
+          });
+        }
+      }
+    },
+
+    // Si estamos online pedimos al API con planta como filtro
+    async fetchEmpleadosFiltered() {
+      const q = this.empleado_nombre || '';
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (this.planta) params.set('planta', this.planta);
+      const res = await fetch('/api/employees?' + params.toString(), {credentials:'same-origin'});
+      if (res.ok) this.empleados = await res.json();
+    },
+
+    async fetchDestajosFiltered() {
+      const q = this.destajo_text || '';
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (this.planta) params.set('planta', this.planta);
+      const res = await fetch('/api/destajos?' + params.toString(), {credentials:'same-origin'});
+      if (res.ok) this.destajos = await res.json();
     },
 
     asignarDocumento() {
@@ -148,12 +231,12 @@ window.destajosForm = function(){
       }
 
       const e = this.empleados.find(x => {
-        if (!x.nombreCompleto || !x.apellidoCompleto) return false;
-        const fullName = `${x.nombreCompleto} ${x.apellidoCompleto}`.trim().toLowerCase();
+        if (!x.nombre) return false;
+        const fullName = `${x.nombre}`.trim().toLowerCase();
         return fullName === this.empleado_nombre.trim().toLowerCase();
       });
 
-      this.empleado_documento = e ? e.numeroDocumento : '';
+      this.empleado_documento = e ? e.documento : '';
     },
 
     validar() {
@@ -166,42 +249,31 @@ window.destajosForm = function(){
       return Object.keys(this.errores).length === 0;
     },
 
+    // ajustar buscarEmpleado para pasar planta
     async buscarEmpleado() {
-      console.log("🔍 Buscando Empleado:", this.empleado_nombre);
-
       const q = this.empleado_nombre || this.empleado_documento;
       if (!q || q.length < 2) return;
+      const params = new URLSearchParams();
+      params.set('q', q);
+      if (this.planta) params.set('planta', this.planta);
 
       try {
-        const res = await fetch(`/api/employees?q=${encodeURIComponent(q)}`);
-        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const res = await fetch('/api/employees?' + params.toString(), {credentials:'same-origin'});
         const data = await res.json();
-        
         if (Array.isArray(data)){
           this.empleados = data;
-
-          const seleccionado = data.find(e =>
-            e.nombre?.trim().toLowerCase() === this.empleado_nombre?.trim().toLowerCase()
-          );
-
-          if (seleccionado) {
-            this.empleado_documento = seleccionado.documento;
-          }
-        } else {
-          console.warn("⚠️ Respuesta inesperada de /api/employees:", data);
-          this.empleados = [];
+          const seleccionado = data.find(e => e.nombre?.trim().toLowerCase() === this.empleado_nombre?.trim().toLowerCase());
+          if (seleccionado) this.empleado_documento = seleccionado.documento;
         }
-        
       } catch (err) {
-        console.error("⚠️ Error buscando empleado", err);
-        this.status = "Error al buscar empleado";
+        console.error(err);
       }
     },
 
     asignarDestajo() {
         // Busca en la lista de destajos por el texto ingresado
-        const d = this.destajos.find(x => x.Concepto.toLowerCase() === this.destajo_text.trim().toLowerCase());
-        this.destajo_id = d ? d.Id : null;  // <-- Aquí se asigna destajo_id
+        const d = this.destajos.find(x => x.concepto.toLowerCase() === this.destajo_text.trim().toLowerCase());
+        this.destajo_id = d ? d.id : null;  // <-- Aquí se asigna destajo_id
     },
 
     async searchDestajo(){
@@ -229,7 +301,11 @@ window.destajosForm = function(){
       if(navigator.onLine){
         try {
           await API.post('/api/registros', payload);
-          this.status = 'Guardado en servidor';
+          // ⚡️ Muestra chulo verde
+          this.showSuccess = true;
+          this.status = '';
+          // Ocúltalo después de 2 s
+          setTimeout(() => { this.showSuccess = false }, 2000);
         } catch(e){
           this.status = 'Error servidor, encolado offline';
           await idbAdd(db, STORE_QUEUE, payload);
@@ -264,6 +340,8 @@ window.consultarView = function(){
     documento: '',
     desde: '',
     hasta: '',
+    planta: '',        // la planta seleccionada
+    plantas: [],       // lista de plantas
     registros: [],
     destajos: [],
     destajosMap: new Map(),
@@ -272,6 +350,11 @@ window.consultarView = function(){
 
     // Inicializar destajos
     async init() {
+
+      // Cargar plantas disponibles
+      const resPlantas = await fetch('/api/plantas', {credentials:'same-origin'});
+      if (resPlantas.ok) this.plantas = await resPlantas.json();
+
       try {
         // 1️⃣ Inicializar fechas por defecto
         const today = new Date();
@@ -279,12 +362,16 @@ window.consultarView = function(){
         this.hasta = today.toISOString().split('T')[0]; // hoy
 
         // 2️⃣ Cargar destajos
-        const d = await API.get("/api/destajos");
+        const params = new URLSearchParams();
+        if (this.planta) params.set('planta', this.planta);
+
+        const d = await API.get(`/api/destajos?${params.toString()}`);
         this.destajos = d;
-        // Forzar claves numéricas
+        this.destajosMap.clear();
         d.forEach(x => this.destajosMap.set(Number(x.id), x.concepto));
         this.ready = true;
 
+        // Buscar registros al cargar
         this.buscar();
 
         console.log("🟢 Destajos cargados:", this.destajos);  // <--- aquí
@@ -319,6 +406,7 @@ window.consultarView = function(){
       if(this.documento) p.set('documento', this.documento);
       if(this.desde) p.set('desde', this.desde);
       if(this.hasta) p.set('hasta', this.hasta);
+      if(this.planta) p.set('planta', this.planta); // se envía si hay planta elegida
 
       if (navigator.onLine) {
         try {
@@ -374,9 +462,14 @@ window.consultarView = function(){
       }
     },
 
-    async loadDestajos() {
-      const data = await fetch('/api/destajos').then(r => r.json());
-      this.destajos = data;
+    async loadDestajos(planta = this.planta) {
+      const params = new URLSearchParams();
+      if (planta) params.set('planta', planta);
+      this.destajos = await fetch('/api/destajos?' + params.toString())
+                            .then(r => r.json());
+
+      this.destajosMap.clear();
+      this.destajos.forEach(x => this.destajosMap.set(Number(x.id), x.concepto));
     },
 
     cancelar(r){
@@ -673,6 +766,7 @@ async function syncTables() {
         // await syncTable(db, STORE_USUARIOS, "/auth/users");
         await syncTable(db, STORE_EMPLEADOS, "/api/empleados");
         await syncTable(db, STORE_DESTAJOS, "/api/mdestajos");
+        await syncTable(db, STORE_PLANTAS, "/api/plantas", "Planta"); // <-- agregar plantas
 
         console.log("✅ Tablas locales sincronizadas inteligentemente");
     } catch (e) {

@@ -12,41 +12,67 @@
 
   <!-- Filtros -->
   <div class="bg-white rounded-2xl shadow p-4">
-    <h2 class="text-lg font-semibold mb-3">Filtros de búsqueda</h2>
-    <div class="grid md:grid-cols-4 gap-4 items-end">
-      <!-- Inputs más pequeños -->
-      <input placeholder="Documento" 
-            x-model="documento" 
-            class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-full">
+    <h2 class="text-base font-semibold mb-3">Filtros de búsqueda</h2>
+    <div class="flex flex-wrap items-end gap-4">
 
-      <input type="date" 
-            x-model="desde" 
-            class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-full">
+      <!-- Planta -->
+      <div>
+        <label class="block font-normal text-sm mb-1">Planta</label>
+        <select x-model="planta" @change="loadDestajos();buscar()" 
+                class="border rounded p-1 text-sm w-32">
+          <option value="">TODAS</option>
+          <template x-for="(p, idx) in plantas" :key="p.Planta ?? p">
+            <option :value="p.Planta ?? p" x-text="p.Planta ?? p"></option>
+          </template>
+        </select>
+      </div>
 
-      <input type="date" 
-            x-model="hasta" 
-            class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-full">
+      <!-- Documento -->
+      <div>
+        <label class="block font-normal text-sm mb-1">Documento</label>
+        <input x-model="documento" 
+              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+      </div>
 
-      <!-- Botones en una sola fila -->
-      <div class="flex flex-wrap gap-2">
+      <!-- Desde -->
+      <div>
+        <label class="block font-normal text-sm mb-1">Desde</label>
+        <input type="date" 
+              x-model="desde" 
+              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+      </div>
+
+      <!-- Hasta -->
+      <div>
+        <label class="block font-normal text-sm mb-1">Hasta</label>
+        <input type="date" 
+              x-model="hasta" 
+              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+      </div>
+
+      <!-- Botones en línea -->
+      <div class="flex gap-2 pt-5">
         <button @click="buscar()" 
-                class="px-3 py-1 bg-sky-600 text-white rounded shadow text-sm text-center hover:bg-sky-700">
+                class="w-28 px-2 py-1 bg-sky-600 text-white rounded shadow text-sm text-center hover:bg-sky-700">
           Buscar
         </button>
 
         <a href="{{ url_for('web.destajos') }}"
-          class="px-3 py-1 bg-indigo-600 text-white rounded shadow text-sm text-center hover:bg-indigo-700">
+          class="w-28 px-2 py-1 bg-indigo-600 text-white rounded shadow text-sm text-center hover:bg-indigo-700">
           Nuevo
         </a>
 
         <button @click="exportarLiquidacion" 
-                class="px-3 py-1 bg-green-600 text-white rounded shadow text-sm text-center hover:bg-green-700">
-          Liquidación
+                class="w-28 px-2 py-1 bg-green-600 text-white rounded shadow text-sm text-center hover:bg-green-700">
+          Liquid.
         </button>
       </div>
-    </div>
 
+    </div>
   </div>
+
+
+
 
   <!-- Resultados -->
   <div class="bg-white rounded-2xl shadow p-4 overflow-auto">
@@ -100,7 +126,7 @@
                 <span x-text="r.cantidad"></span>
               </template>
               <template x-if="r._edit">
-                <input type="number" step="1" min="1" x-model.number="r.cantidad" class="border rounded p-1 w-24 text-right">
+                <input type="number" step="0.1" min="1" x-model.number="r.cantidad" class="border rounded p-1 w-24 text-right">
               </template>
             </td>
 

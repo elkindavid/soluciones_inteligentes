@@ -1,72 +1,90 @@
-from flask import Blueprint, request, jsonify, render_template, send_file
+from flask import Blueprint, request, jsonify, send_file, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import text
 from .extensions import db
 from .models import RegistroDestajo
 from datetime import datetime, date
-from .models import User, GHDestajo, GHEmpleado
+from .models import GHDestajo, GHEmpleado
 import pandas as pd
 from io import BytesIO
 from openpyxl.utils import get_column_letter
 
 api_bp = Blueprint("api", __name__)
 
-from flask import current_app, request, jsonify
-from sqlalchemy import text
-from .extensions import db
-from sqlalchemy import create_engine
-
 @api_bp.get("/employees")
 @login_required
 def employees():
     q = request.args.get("q", "").strip()
-    if not q:
-        return jsonify([])
+    planta = request.args.get("planta", "").strip()
 
-    # 🔗 Solo SQL Server
-    sql = text("""
-        SELECT nombreCompleto, apellidoCompleto, numeroDocumento
+    where = ["estado = 'ACTIVO'"]
+    params = {}
+
+    if q:
+        where.append("""(
+            LOWER(LTRIM(RTRIM(nombreCompleto))) LIKE LOWER(:q) OR
+            LOWER(LTRIM(RTRIM(apellidoCompleto))) LIKE LOWER(:q) OR
+            LOWER(LTRIM(RTRIM(nombreCompleto)) + ' ' + LTRIM(RTRIM(apellidoCompleto))) LIKE LOWER(:q) OR
+            CAST(numeroDocumento AS NVARCHAR(50)) LIKE :q
+        )""")
+        params['q'] = f'%{q}%'
+
+    # si planta fue enviada y no es vacío ni 'TODAS', filtramos por agrupador4
+    if planta and planta.upper() != 'TODAS':
+        where.append("agrupador4 LIKE :pplanta")
+        params['pplanta'] = f'%{planta}%'
+
+    sql = text(f"""
+        SELECT nombreCompleto, apellidoCompleto, numeroDocumento, agrupador4
         FROM GH_Empleados
-        WHERE estado = 'ACTIVO' 
-        AND (
-            LOWER(LTRIM(RTRIM(nombreCompleto))) LIKE LOWER(:q)
-            OR LOWER(LTRIM(RTRIM(apellidoCompleto))) LIKE LOWER(:q)
-            OR LOWER(LTRIM(RTRIM(nombreCompleto)) + ' ' + LTRIM(RTRIM(apellidoCompleto))) LIKE LOWER(:q)
-            OR CAST(numeroDocumento AS NVARCHAR(50)) LIKE :q
-        )
+        WHERE {' AND '.join(where)}
         ORDER BY nombreCompleto
     """)
-    rows = db.session.execute(sql, {'q': f'%{q}%'}).mappings().all()
+    rows = db.session.execute(sql, params).mappings().all()
 
     return jsonify([
         {
             'nombre': f"{r['nombreCompleto']} {r['apellidoCompleto']}".strip(),
-            'documento': str(r['numeroDocumento'])
+            'documento': str(r['numeroDocumento']),
+            'agrupador4': r.get('agrupador4')
         }
         for r in rows
     ])
+
 
 @api_bp.get("/destajos")
 @login_required
 def destajos_catalog():
     q = request.args.get("q", "").strip()
+    planta = request.args.get("planta", "").strip()
+    where = ["1=1"]
+    params = {}
 
-    
-    # 🔹 Query para SQL Server
-    sql = text("""
+    if q:
+        where.append("Concepto LIKE :q")
+        params['q'] = f'%{q}%'
+
+    # Si planta no se envía o es vacío → no filtrar 
+    # Si planta == 'TODAS' → incluir todos
+    if planta and planta.upper() != 'TODAS':
+        # traemos filas donde GH_Destajos.Planta = planta OR Planta = 'TODAS'
+        where.append("(Planta = :planta OR Planta = 'TODAS')")
+        params['planta'] = planta
+
+    sql = text(f"""
         SELECT Id, Planta, Concepto, Valor
         FROM GH_Destajos
-        WHERE Concepto LIKE :q
+        WHERE {' AND '.join(where)}
         ORDER BY Concepto
     """)
-    rows = db.session.execute(sql, {'q': f'%{q}%'}).mappings().all()
+    rows = db.session.execute(sql, params).mappings().all()
 
     return jsonify([
         {
             'id': int(r['Id']),
             'planta': r['Planta'],
             'concepto': r['Concepto'],
-            'valor': float(r['Valor'])
+            'valor': float(r['Valor'] or 0)
         }
         for r in rows
     ])
@@ -123,6 +141,7 @@ def listar_registros():
     doc = request.args.get('documento')
     f1 = request.args.get('desde')
     f2 = request.args.get('hasta')
+    planta = request.args.get('planta')  # 👈 nuevo
 
     sql = """
         SELECT r.id, r.empleado_documento, r.empleado_nombre, r.destajo_id, r.cantidad,
@@ -141,7 +160,11 @@ def listar_registros():
     if f2:
         sql += " AND r.fecha <= :f2"
         params['f2'] = date.fromisoformat(f2)
-    sql += " ORDER BY r.fecha DESC, r.id DESC"
+    if planta:  # 👈 nuevo filtro
+        sql += " AND d.Planta = :planta"
+        params['planta'] = planta
+
+    sql += " ORDER BY r.fecha DESC"
     rows = db.session.execute(text(sql), params).mappings().all()
 
     return jsonify([{
@@ -190,24 +213,20 @@ def get_empleados():
 @api_bp.route("/mdestajos", methods=["GET"])
 def get_destajos():
     try:
-        destajos = GHDestajo.query.all()
-        destajos_data = [e.to_dict() for e in destajos]  # asegúrate que el modelo tenga to_dict()
+        planta = request.args.get('planta', '').strip()
+        q = request.args.get('q', '').strip()
+
+        query = GHDestajo.query
+        if q:
+            query = query.filter(GHDestajo.Concepto.ilike(f'%{q}%'))
+        if planta and planta.upper() != 'TODAS':
+            query = query.filter((GHDestajo.Planta == planta) | (GHDestajo.Planta == 'TODAS'))
+
+        destajos = query.order_by(GHDestajo.Concepto).all()
+        destajos_data = [d.to_dict() for d in destajos]
         return jsonify(destajos_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-from io import BytesIO
-import pandas as pd
-from sqlalchemy import text
-from datetime import date
-from flask import current_app
-
-from flask import send_file, request, current_app
-from sqlalchemy.sql import text
-from io import BytesIO
-import pandas as pd
-from datetime import date
-from openpyxl.styles import numbers
 
 @api_bp.get("/liquidacion/excel")
 @login_required
@@ -341,6 +360,16 @@ def liquidacion_excel():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-
-
+@api_bp.get("/plantas")
+@login_required
+def plantas():
+    sql = text("""
+        SELECT DISTINCT Planta
+        FROM GH_Plantas
+        WHERE Planta IS NOT NULL AND LTRIM(RTRIM(Planta)) <> ''
+        ORDER BY Planta
+    """)
+    rows = db.session.execute(sql).mappings().all()
+    # devolver lista simple de objetos { Planta: '...' } para facilitar sync en IndexedDB
+    return jsonify([{'Planta': r['Planta']} for r in rows])
 
