@@ -29,12 +29,6 @@ function initDB(){
         console.log("🗂️ Store creada:", STORE_QUEUE);
       }
 
-      // // --- Store usuarios (para login offline) ---
-      // if (!db.objectStoreNames.contains(STORE_USUARIOS)) {
-      //   db.createObjectStore(STORE_USUARIOS, { keyPath: "id" });
-      //   console.log("🗂️ Store creada:", STORE_USUARIOS);
-      // }
-
       // --- Store empleados ---
       if (!db.objectStoreNames.contains(STORE_EMPLEADOS)) {
         db.createObjectStore(STORE_EMPLEADOS, { keyPath: "numeroDocumento" });
@@ -153,12 +147,11 @@ window.destajosForm = function(){
         this.empleados = await idbGetAll(db, STORE_EMPLEADOS);
         this.destajos = await idbGetAll(db, STORE_DESTAJOS);
       }
-
-      // ✅ Tomar la primera planta automáticamente
-      if (this.plantas.length > 0) {
-        // si tus plantas vienen como {Planta:'X'}, toma el campo
-        this.planta = this.plantas[0].Planta ?? this.plantas[0];
-      }
+      
+      // // siempre agregamos primero “Seleccione…”
+      // if (this.plantas.length === 0 || this.plantas[0].Planta !== '') {
+      //   this.plantas.unshift({Planta: '', nombre: 'Seleccione…'});
+      // }
 
       // cargar empleados/destajos ya filtrados
       await this.onPlantaChange();
@@ -167,10 +160,11 @@ window.destajosForm = function(){
 
     // Llamar cuando el select de planta cambie
     async onPlantaChange() {
-      // limpiar asignaciones que ya no correspondan
-      this.empleado_documento = '';
-      this.destajo_id = null;
-      this.destajo_text = '';
+      // resetear destajo y empleado cuando cambia planta
+      this.destajo = null;
+      this.empleado_nombre = '';       // 🔹 limpiar campo visible
+      this.empleado_documento = '';    // 🔹 limpiar documento
+      this.empleados = [];             // 🔹 limpiar lista
 
       if (navigator.onLine) {
         await this.fetchEmpleadosFiltered();
@@ -205,23 +199,31 @@ window.destajosForm = function(){
       }
     },
 
-    // Si estamos online pedimos al API con planta como filtro
+    // filtro de empleados
     async fetchEmpleadosFiltered() {
       const q = this.empleado_nombre || '';
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (this.planta) params.set('planta', this.planta);
-      const res = await fetch('/api/employees?' + params.toString(), {credentials:'same-origin'});
-      if (res.ok) this.empleados = await res.json();
-    },
 
+      const res = await fetch('/api/employees?' + params.toString(), { credentials: 'same-origin' });
+      if (res.ok) {
+        this.empleados = await res.json();
+        // opcional: insertar “Seleccione…” al inicio
+        this.empleados.unshift({ documento: '', nombre: 'Seleccione…' });
+      }
+    },
+    
     async fetchDestajosFiltered() {
-      const q = this.destajo_text || '';
       const params = new URLSearchParams();
-      if (q) params.set('q', q);
+      if (this.destajo_text) params.set('q', this.destajo_text);
       if (this.planta) params.set('planta', this.planta);
+
       const res = await fetch('/api/destajos?' + params.toString(), {credentials:'same-origin'});
-      if (res.ok) this.destajos = await res.json();
+      if (res.ok) {
+        this.destajos = await res.json();
+        this.destajos.unshift({ id: null, concepto: 'Seleccione…' });
+      }
     },
 
     asignarDocumento() {
@@ -241,6 +243,7 @@ window.destajosForm = function(){
 
     validar() {
       this.errores = {};
+      if (!this.planta.trim()) this.errores.planta = "Debe seleccionar una planta.";
       if (!this.empleado_nombre.trim()) this.errores.empleado_nombre = "Debe seleccionar un empleado.";
       if (!this.empleado_documento.trim()) this.errores.empleado_documento = "No se asignó documento al empleado.";
       if (!this.destajo_id) this.errores.destajo = "Debe seleccionar un destajo válido.";
@@ -392,9 +395,18 @@ window.consultarView = function({userId, isAdmin}){
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
+      // genera timestamp AAAAMMDDHHMMSS
+      const now = new Date();
+      const timestamp = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0') +
+        String(now.getSeconds()).padStart(2, '0');
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'liquidacion.xlsx';
+       a.download = `liquidacion_${timestamp}.xls`; // nombre dinámico
       document.body.appendChild(a);
       a.click();
       a.remove();

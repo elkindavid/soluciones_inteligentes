@@ -19,8 +19,10 @@
         <div>
           <label class="block text-sm">Planta</label>
           <select x-model="planta" @change="onPlantaChange()" class="w-full border rounded p-2">
-            <template x-for="(p, idx) in plantas" :key="p.Planta ?? p">
-              <option :value="p.Planta ?? p" x-text="p.Planta ?? p"></option>
+            <!-- primer item placeholder -->
+            <option value="">Seleccione…</option>
+            <template x-for="p in plantas" :key="p.Planta">
+              <option :value="p.Planta" x-text="p.nombre || p.Planta"></option>
             </template>
           </select>
           <span class="text-red-500 text-sm" x-text="errores.planta"></span>
@@ -29,15 +31,11 @@
         <!-- Empleado -->
         <div>
           <label class="block text-sm">Empleado (nombre)</label>
-          <input x-model="empleado_nombre"
-                 @change="asignarDocumento()"
-                 list="listaEmpleados"
-                 class="w-full border rounded p-2">
-          <datalist id="listaEmpleados">
+          <select x-model="empleado_nombre" @change="asignarDocumento" class="w-full border rounded p-2">
             <template x-for="(e, index) in empleados" :key="e.documento || index">
-              <option :value="e.nombre"></option>
+              <option :value="e.nombre" x-text="e.nombre"></option>
             </template>
-          </datalist>
+          </select>
           <span class="text-red-500 text-sm" x-text="errores.empleado_nombre"></span>
         </div>
 
@@ -53,17 +51,15 @@
         <!-- Destajo -->
         <div>
           <label class="block text-sm">Destajo</label>
-          <input x-model="destajo_text"
-                 @change="asignarDestajo()"
-                 list="listaDestajos"
-                 class="w-full border rounded p-2">
-          <datalist id="listaDestajos">
+          <select x-model.number="destajo_id"
+                  class="w-full border rounded p-2">
             <template x-for="(d, index) in destajos" :key="d.id || index">
-              <option :value="d.concepto"></option>
+              <option :value="d.id" x-text="d.concepto"></option>
             </template>
-          </datalist>
+          </select>
           <span class="text-red-500 text-sm" x-text="errores.destajo"></span>
         </div>
+
 
         <!-- Cantidad -->
         <div>

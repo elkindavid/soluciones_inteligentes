@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, request, jsonify, send_file, current_app, flash
 from flask_login import login_required, current_user
 from sqlalchemy import text
 from .extensions import db
@@ -9,6 +9,8 @@ import pandas as pd
 from io import BytesIO
 from openpyxl.utils import get_column_letter
 from .auth import admin_required_api
+import win32com.client as win32
+from tempfile import NamedTemporaryFile
 
 api_bp = Blueprint("api", __name__)
 
@@ -301,33 +303,24 @@ def liquidacion_excel():
 
         SMV = current_app.config.get('AAA', 47450)
 
-        # --- base agrupada ---
-        df_group = df.groupby(['TipoDocumento','NumeroDocumento','Concepto','AreaFuncional'], as_index=False).agg({
-            'Cantidad':'sum',
-            'Valor':'mean'
-        })
+        df_group = df.groupby(
+            ['TipoDocumento','NumeroDocumento','Concepto','AreaFuncional'],
+            as_index=False
+        ).agg({'Cantidad':'sum','Valor':'mean'})
 
-        # --- cálculo promedio para DESCANSO ---
-        # Filtrar destajos que NO sean JORNAL ni DESCANSO
         df_validos = df[~df['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True)].copy()
-        # Calcular vxq y conteo
         df_validos['vxq'] = df_validos['Valor']*df_validos['Cantidad']
         ponderado = df_validos.groupby('NumeroDocumento').agg(
-            total_val=('vxq','sum'),
-            conteo=('vxq','count')
+            total_val=('vxq','sum'), conteo=('vxq','count')
         )
         ponderado['PromPond'] = ponderado['total_val']/ponderado['conteo']
-        # Garantizar mínimo SMV
         ponderado['PromPond'] = ponderado['PromPond'].apply(lambda x: max(x,SMV))
         prom_map = ponderado['PromPond'].to_dict()
 
-        # --- función para valor total ---
         def calc_valor_total(row):
             concepto = (row.get('Concepto') or '').upper()
             qty = float(row.get('Cantidad',0))
-            val = float(row.get('Valor',0))
             numdoc = row.get('NumeroDocumento')
-
             if 'JORNAL FESTIVO' in concepto:
                 return SMV * 1.8 * qty
             if 'JORNAL' in concepto:
@@ -335,16 +328,14 @@ def liquidacion_excel():
             if 'DESCANSO' in concepto:
                 prom = prom_map.get(numdoc, SMV)
                 return prom * qty
-            return ""  # en blanco para los otros
+            return ""
 
         df_group['ValorTotal'] = df_group.apply(calc_valor_total, axis=1)
-
-        # TipoNovedad, TipoRegistro, etc.
-        df_group['TipoNovedad'] = df_group['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True).map(lambda x: 4 if x else 3)
+        df_group['TipoNovedad'] = df_group['Concepto'].str.contains(
+            'DESCANSO|JORNAL', case=False, regex=True).map(lambda x: 4 if x else 3)
         df_group['TipoRegistro'] = 1
         df_group['TipoReporte'] = 5
         df_group['FechaNovedad'] = f2 if f2 else ""
-
         df_group['IncluyePago'] = df_group['TipoNovedad'].apply(lambda x: 'Y' if x == 4 else '')
         df_group['SumaResta']   = df_group['TipoNovedad'].apply(lambda x: 1 if x == 4 else '')
 
@@ -358,17 +349,25 @@ def liquidacion_excel():
 
         df_out = df_group[cols]
 
-    # --- generar Excel 97 (xls) sin encabezados ---
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # header=False para sin encabezados
-        df_out.to_excel(writer, index=False, header=True, sheet_name="Liquidacion")
-        # No aplicamos formato a ValorTotal (ya es numérico)
-    output.seek(0)
+    # --- Guardar .xlsx temporal ---
+    with NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_xlsx:
+        df_out.to_excel(tmp_xlsx.name, index=False, header=False, sheet_name="Liquidacion")
+        ruta_xlsx = tmp_xlsx.name
+
+    # --- Convertir a .xls con Excel ---
+    with NamedTemporaryFile(suffix=".xls", delete=True) as tmp_xls:
+        ruta_xls = tmp_xls.name
+
+    excel = win32.Dispatch('Excel.Application')
+    excel.Visible = False
+    wb = excel.Workbooks.Open(ruta_xlsx)
+    wb.SaveAs(ruta_xls, FileFormat=56)  # 56 = Excel 97-2003
+    wb.Close()
+    excel.Quit()
 
     return send_file(
-        output,
-        download_name="liquidacion.xls",  # Excel 97-2003
+        ruta_xls,
+        download_name="liquidacion.xls",
         as_attachment=True,
         mimetype='application/vnd.ms-excel'
     )

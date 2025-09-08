@@ -27,3 +27,4 @@ def consultar():
         user=current_user,
         is_admin = current_user.is_admin
     )
+
