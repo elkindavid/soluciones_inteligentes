@@ -335,8 +335,10 @@ window.onload = async () => {
 // ==============================
 // Alpine data: Vista consultar
 // ==============================
-window.consultarView = function(){
+window.consultarView = function({userId, isAdmin}){
   return {
+    userId: userId,
+    isAdmin: isAdmin,
     documento: '',
     desde: '',
     hasta: '',

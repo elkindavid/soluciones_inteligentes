@@ -12,10 +12,18 @@ def home():
 @login_required
 def destajos():
     # Aquí tu vista de registro y consulta
-    return render_template("destajos.html", user=current_user)
+    return render_template(
+        "destajos.html", 
+        user=current_user,
+        is_admin = current_user.is_admin
+    )
 
 @web_bp.route("/consultar")
 @login_required
 def consultar():
     # Vista de consulta/edición/eliminación
-    return render_template("consultar.html", user=current_user)
+    return render_template(
+        "consultar.html", 
+        user=current_user,
+        is_admin = current_user.is_admin
+    )

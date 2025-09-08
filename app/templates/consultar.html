@@ -2,7 +2,10 @@
 {% block title %}Consultar Destajos{% endblock %}
 
 {% block content %}
-<div x-data="consultarView()" x-init="init()" class="p-6 space-y-6">
+<div x-data="consultarView({ 
+        userId: {{ current_user.id }}, 
+        isAdmin: {{ 'true' if current_user.is_admin else 'false' }}
+      })" x-init="init()" class="p-6 space-y-6">
 
   <!-- Encabezado -->
   <div class="text-center">
@@ -134,8 +137,12 @@
             <td class="p-2 text-center">
               <template x-if="!r._edit">
                 <div class="flex justify-center space-x-2">
-                  <button @click="editar(r)" class="px-2 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200">Editar</button>
-                  <button @click="eliminar(r)" class="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200">Eliminar</button>
+                  <template x-if="isAdmin || userId == r.usuario_id">
+                    <button @click="editar(r)" class="px-2 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200">Editar</button>
+                  </template>
+                  <template x-if="isAdmin">
+                    <button @click="eliminar(r)" class="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200">Eliminar</button>
+                  </template>
                 </div>
               </template>
 

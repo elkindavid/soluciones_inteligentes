@@ -24,6 +24,15 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+def admin_required_api(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            abort(401)  # no logueado
+        if not getattr(current_user, "is_admin", False):
+            abort(403)  # sin permisos
+        return f(*args, **kwargs)
+    return wrapper
 
 # Listado de usuarios (solo admins)
 @auth_bp.route("/usuarios")

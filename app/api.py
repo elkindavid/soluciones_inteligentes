@@ -8,6 +8,7 @@ from .models import GHDestajo, GHEmpleado
 import pandas as pd
 from io import BytesIO
 from openpyxl.utils import get_column_letter
+from .auth import admin_required_api
 
 api_bp = Blueprint("api", __name__)
 
@@ -109,19 +110,33 @@ def crear_registro():
 @login_required
 def editar_registro(rid):
     reg = db.session.get(RegistroDestajo, rid)
-    if not reg: return jsonify({'error':'not found'}), 404
+    if not reg:
+        return jsonify({'error': 'not found'}), 404
+
+    # 🔒 solo permitir si es el creador o admin
+    if reg.usuario_id != current_user.id and not getattr(current_user, "is_admin", False):
+        return jsonify({'error': 'forbidden'}), 403
+
     data = request.get_json(force=True)
-    for k in ['empleado_documento','empleado_nombre']:
-        if k in data: setattr(reg,k,data[k])
-    if 'destajo_id' in data: reg.destajo_id = int(data['destajo_id'])
-    if 'cantidad' in data: reg.cantidad = float(data['cantidad'])
-    if 'fecha' in data: reg.fecha = datetime.fromisoformat(data['fecha']).date()
+
+    for k in ['empleado_documento', 'empleado_nombre']:
+        if k in data:
+            setattr(reg, k, data[k])
+    if 'destajo_id' in data:
+        reg.destajo_id = int(data['destajo_id'])
+    if 'cantidad' in data:
+        reg.cantidad = float(data['cantidad'])
+    if 'fecha' in data:
+        reg.fecha = datetime.fromisoformat(data['fecha']).date()
+
     db.session.commit()
     return jsonify({'ok': True})
 
 @api_bp.delete("/registros/<int:rid>")
 @login_required
+@admin_required_api   # ⬅️ aquí
 def eliminar_registro(rid):
+    breakpoint()
     reg = db.session.get(RegistroDestajo, rid)
     if not reg: return jsonify({'error':'not found'}), 404
     db.session.delete(reg)
@@ -286,21 +301,27 @@ def liquidacion_excel():
 
         SMV = current_app.config.get('AAA', 47450)
 
+        # --- base agrupada ---
         df_group = df.groupby(['TipoDocumento','NumeroDocumento','Concepto','AreaFuncional'], as_index=False).agg({
             'Cantidad':'sum',
-            'Valor':'mean'  # valor unitario
+            'Valor':'mean'
         })
 
-        df_no_desc = df[~df['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True)]
-        ponderado = (
-            df_no_desc
-            .assign(vxq=lambda x: x['Valor']*x['Cantidad'])
-            .groupby('NumeroDocumento')
-            .agg({'vxq':'sum','Cantidad':'sum'})
+        # --- cálculo promedio para DESCANSO ---
+        # Filtrar destajos que NO sean JORNAL ni DESCANSO
+        df_validos = df[~df['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True)].copy()
+        # Calcular vxq y conteo
+        df_validos['vxq'] = df_validos['Valor']*df_validos['Cantidad']
+        ponderado = df_validos.groupby('NumeroDocumento').agg(
+            total_val=('vxq','sum'),
+            conteo=('vxq','count')
         )
-        ponderado['PromPond'] = ponderado['vxq']/ponderado['Cantidad']
+        ponderado['PromPond'] = ponderado['total_val']/ponderado['conteo']
+        # Garantizar mínimo SMV
+        ponderado['PromPond'] = ponderado['PromPond'].apply(lambda x: max(x,SMV))
         prom_map = ponderado['PromPond'].to_dict()
 
+        # --- función para valor total ---
         def calc_valor_total(row):
             concepto = (row.get('Concepto') or '').upper()
             qty = float(row.get('Cantidad',0))
@@ -312,11 +333,13 @@ def liquidacion_excel():
             if 'JORNAL' in concepto:
                 return SMV * qty
             if 'DESCANSO' in concepto:
-                prom = prom_map.get(numdoc,0)
+                prom = prom_map.get(numdoc, SMV)
                 return prom * qty
-            return ""
+            return ""  # en blanco para los otros
 
         df_group['ValorTotal'] = df_group.apply(calc_valor_total, axis=1)
+
+        # TipoNovedad, TipoRegistro, etc.
         df_group['TipoNovedad'] = df_group['Concepto'].str.contains('DESCANSO|JORNAL', case=False, regex=True).map(lambda x: 4 if x else 3)
         df_group['TipoRegistro'] = 1
         df_group['TipoReporte'] = 5
@@ -335,29 +358,19 @@ def liquidacion_excel():
 
         df_out = df_group[cols]
 
-    # --- generar excel y ajustar columnas ---
+    # --- generar Excel 97 (xls) sin encabezados ---
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_out.to_excel(writer, index=False, sheet_name="Liquidacion")
-        ws = writer.sheets["Liquidacion"]
-
-        for col_idx, column_title in enumerate(df_out.columns, start=1):
-            col_letter = get_column_letter(col_idx)
-            col_cells = ws[col_letter]
-            max_length = max((len(str(c.value)) for c in col_cells if c.value is not None), default=len(column_title))
-            ws.column_dimensions[col_letter].width = max_length + 2
-
-            # Formato moneda en ValorTotal
-            if column_title == 'ValorTotal':
-                for c in col_cells[1:]:  # datos, sin cabecera
-                    c.number_format = '$ #,##0.00'
-
+        # header=False para sin encabezados
+        df_out.to_excel(writer, index=False, header=True, sheet_name="Liquidacion")
+        # No aplicamos formato a ValorTotal (ya es numérico)
     output.seek(0)
+
     return send_file(
         output,
-        download_name="liquidacion.xlsx",
+        download_name="liquidacion.xls",  # Excel 97-2003
         as_attachment=True,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        mimetype='application/vnd.ms-excel'
     )
 
 @api_bp.get("/plantas")
