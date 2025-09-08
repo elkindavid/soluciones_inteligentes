@@ -406,7 +406,7 @@ window.consultarView = function({userId, isAdmin}){
 
       const a = document.createElement('a');
       a.href = url;
-       a.download = `liquidacion_${timestamp}.xls`; // nombre dinámico
+       a.download = `liquidacion_${timestamp}.xlsx`; // nombre dinámico
       document.body.appendChild(a);
       a.click();
       a.remove();

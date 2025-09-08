@@ -9,7 +9,6 @@ import pandas as pd
 from io import BytesIO
 from openpyxl.utils import get_column_letter
 from .auth import admin_required_api
-import win32com.client as win32
 from tempfile import NamedTemporaryFile
 
 api_bp = Blueprint("api", __name__)
@@ -245,6 +244,14 @@ def get_destajos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+from flask import send_file
+from tempfile import NamedTemporaryFile
+import pandas as pd
+
+from io import BytesIO
+from flask import send_file
+import pandas as pd
+
 @api_bp.get("/liquidacion/excel")
 @login_required
 def liquidacion_excel():
@@ -285,14 +292,14 @@ def liquidacion_excel():
     df = pd.DataFrame(rows)
 
     cols = [
-      "TipoRegistro","TipoDocumento","NumeroDocumento","Concepto","TipoNovedad","TipoReporte",
-      "ValorTotal","IncluyePago","SumaResta","FechaInicial","CantidadDias",
-      "TipoIncapacidad","Diagnostico","NumeroIncapacidad","FechaRetiro","MotivoRetiro",
-      "AreaFuncional","RangoDiaInicial","RangoHoraInicial","RangoHoraFinal","NumeroDias",
-      "Cantidad","NumeroHoras","Indemnizacion","FechaNovedad","PagoTotal",
-      "NaturalezaIncapacidad","FechaInicialEPS","Proyecto","FechaRetiroReal","Gobierno1","Gobierno2",
-      "FechaIniIncPro","TipoDocEntidad","NumDocEntidad","TipoServicioEntidad",
-      "IncapacidadDiasHab","Observaciones","Docentes"
+        "TipoRegistro","TipoDocumento","NumeroDocumento","Concepto","TipoNovedad","TipoReporte",
+        "ValorTotal","IncluyePago","SumaResta","FechaInicial","CantidadDias",
+        "TipoIncapacidad","Diagnostico","NumeroIncapacidad","FechaRetiro","MotivoRetiro",
+        "AreaFuncional","RangoDiaInicial","RangoHoraInicial","RangoHoraFinal","NumeroDias",
+        "Cantidad","NumeroHoras","Indemnizacion","FechaNovedad","PagoTotal",
+        "NaturalezaIncapacidad","FechaInicialEPS","Proyecto","FechaRetiroReal","Gobierno1","Gobierno2",
+        "FechaIniIncPro","TipoDocEntidad","NumDocEntidad","TipoServicioEntidad",
+        "IncapacidadDiasHab","Observaciones","Docentes"
     ]
 
     if df.empty:
@@ -349,27 +356,17 @@ def liquidacion_excel():
 
         df_out = df_group[cols]
 
-    # --- Guardar .xlsx temporal ---
-    with NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_xlsx:
-        df_out.to_excel(tmp_xlsx.name, index=False, header=False, sheet_name="Liquidacion")
-        ruta_xlsx = tmp_xlsx.name
-
-    # --- Convertir a .xls con Excel ---
-    with NamedTemporaryFile(suffix=".xls", delete=True) as tmp_xls:
-        ruta_xls = tmp_xls.name
-
-    excel = win32.Dispatch('Excel.Application')
-    excel.Visible = False
-    wb = excel.Workbooks.Open(ruta_xlsx)
-    wb.SaveAs(ruta_xls, FileFormat=56)  # 56 = Excel 97-2003
-    wb.Close()
-    excel.Quit()
+    # --- Guardar en memoria como .xlsx ---
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_out.to_excel(writer, index=False, header=False, sheet_name="Liquidacion")
+    output.seek(0)
 
     return send_file(
-        ruta_xls,
-        download_name="liquidacion.xls",
+        output,
+        download_name="liquidacion.xlsx",
         as_attachment=True,
-        mimetype='application/vnd.ms-excel'
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 @api_bp.get("/plantas")
