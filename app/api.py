@@ -161,9 +161,9 @@ def listar_registros():
 
     sql = """
         SELECT r.id, r.empleado_documento, r.empleado_nombre, r.destajo_id, r.cantidad,
-               r.fecha, r.fecha_registro, r.usuario_id, d.Concepto
+               r.fecha, r.fecha_registro, r.usuario_id, d.Concepto, u.name
         FROM registros_destajo r
-        LEFT JOIN GH_Destajos d ON d.Id = r.destajo_id
+        INNER JOIN GH_Destajos d ON d.Id = r.destajo_id INNER JOIN users u on r.usuario_id = u.id
         WHERE 1=1
     """
     params = {}
@@ -192,7 +192,8 @@ def listar_registros():
         'cantidad': float(r['cantidad']),
         'fecha': safe_iso(r['fecha']),
         'fecha_registro': safe_iso(r['fecha_registro']),
-        'usuario_id': int(r['usuario_id'])
+        'usuario_id': int(r['usuario_id']),
+        'usuario_nombre' : r['name']
     } for r in rows])
 
 @api_bp.post("/sync")
@@ -262,19 +263,27 @@ def liquidacion_excel():
     params = {}
     sql = """
     SELECT
-      CASE 
+        CASE 
             WHEN LEFT(e.tipoIdentificacion,11)='Cédula Ciud' THEN 'C'
             WHEN LEFT(e.tipoIdentificacion,11)='Cédula de E' THEN 'E'
             WHEN LEFT(e.tipoIdentificacion,11)='Permiso Por' THEN 'PT'
-            ELSE e.tipoIdentificacion END AS TipoDocumento,
-      r.empleado_documento AS NumeroDocumento,
-      d.Concepto,
-      e.centroCosto AS AreaFuncional,
-      r.cantidad AS Cantidad,
-      ISNULL(d.Valor,0) AS Valor
+            ELSE e.tipoIdentificacion 
+        END AS TipoDocumento,
+        r.empleado_documento AS NumeroDocumento,
+        d.Concepto,
+        ee.centroCosto AS AreaFuncional,
+        r.cantidad AS Cantidad,
+        ISNULL(d.Valor,0) AS Valor
     FROM registros_destajo r
-    JOIN GH_Empleados e ON e.numeroDocumento = r.empleado_documento
-    JOIN GH_Destajos d ON d.Id = r.destajo_id
+    JOIN GH_Empleados e 
+        ON e.numeroDocumento = r.empleado_documento
+    JOIN GH_Destajos d 
+        ON d.Id = r.destajo_id
+    OUTER APPLY (
+        SELECT TOP 1 ee.centroCosto
+        FROM GH_Empleados ee
+        WHERE ee.Agrupador4 = d.Planta
+    ) ee
     WHERE 1=1
     """
 

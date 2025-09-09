@@ -183,7 +183,7 @@ window.destajosForm = function(){
         } else {
           this.empleados = localEmps.filter(e => {
             if (!e.agrupador4) return false;
-            return e.agrupador4.includes(planta) || planta === 'TODAS';
+            return e.agrupador4 === planta || planta === 'TODAS';
           });
         }
 
@@ -243,7 +243,7 @@ window.destajosForm = function(){
 
     validar() {
       this.errores = {};
-      if (!this.planta.trim()) this.errores.planta = "Debe seleccionar una planta.";
+      // if (!this.planta.trim()) this.errores.planta = "Debe seleccionar una planta.";
       if (!this.empleado_nombre.trim()) this.errores.empleado_nombre = "Debe seleccionar un empleado.";
       if (!this.empleado_documento.trim()) this.errores.empleado_documento = "No se asignó documento al empleado.";
       if (!this.destajo_id) this.errores.destajo = "Debe seleccionar un destajo válido.";
