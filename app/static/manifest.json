@@ -1,6 +1,6 @@
 {
-  "name": "Destajos App",
-  "short_name": "Destajos",
+  "name": "Soluciones Inteligentes App",
+  "short_name": "SI App",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
