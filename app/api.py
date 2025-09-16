@@ -8,7 +8,6 @@ from .models import GHDestajo, GHEmpleado
 import pandas as pd
 from io import BytesIO
 from openpyxl.utils import get_column_letter
-from .auth import admin_required_api
 from tempfile import NamedTemporaryFile
 
 api_bp = Blueprint("api", __name__)
@@ -135,9 +134,7 @@ def editar_registro(rid):
 
 @api_bp.delete("/registros/<int:rid>")
 @login_required
-@admin_required_api   # ⬅️ aquí
 def eliminar_registro(rid):
-    breakpoint()
     reg = db.session.get(RegistroDestajo, rid)
     if not reg: return jsonify({'error':'not found'}), 404
     db.session.delete(reg)

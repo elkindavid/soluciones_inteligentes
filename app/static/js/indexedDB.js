@@ -551,53 +551,45 @@ window.consultarView = function({userId, isAdmin}){
       }
     },
 
-    // ==================== ELIMINAR (online + offline) ====================
     async eliminar(target) {
       if (!confirm("¿Eliminar registro?")) return;
 
-      // 1) Normaliza el parámetro a objeto `r`
       let r = target;
       if (typeof target !== "object") {
-        r = this.registros.find(
-          (x) => String(x.id) === String(target) || String(x.local_id) === String(target)
-        );
+        r = this.registros.find(x => String(x.id) === String(target));
       }
       if (!r) {
         console.error("❌ No se encontró el registro a eliminar:", target);
+        alert("Registro no encontrado");
         return;
       }
 
-      // 2) Si está online y tiene id de servidor válido → borra en backend
-      if (navigator.onLine && r.id && !String(r.id).startsWith("local-")) {
-        try {
-          await API.del("/api/registros/" + r.id);
-          this.registros = this.registros.filter((x) => x !== r);
-          return;
-        } catch (e) {
-          console.warn("⚠️ No se pudo borrar en servidor, probando offline", e);
-        }
+      if (!navigator.onLine) {
+        alert("No hay conexión a internet. No se puede eliminar.");
+        return;
       }
 
-      // 3) OFFLINE: borrar de la cola usando SIEMPRE el keyPath del store (local_id numérico)
+      if (!r.id) {
+        console.error("❌ Este registro no tiene id de servidor:", r);
+        alert("No se puede eliminar este registro");
+        return;
+      }
+
       try {
-        const db = await initDB();
+        const res = await API.del("/api/registros/" + r.id);
 
-        const key = r.local_id; // ← CLAVE REAL DEL STORE
-        if (key === null || key === undefined) {
-          console.error("❌ Falta local_id, no se puede borrar offline", r);
-          alert("Error eliminando offline: falta local_id");
-          return;
+        // Si tu API devuelve status o mensaje, lo mostramos
+        console.log("✅ Respuesta del servidor:", res);
+
+        this.registros = this.registros.filter(x => x !== r);
+        console.log("✅ Registro eliminado en la UI:", r);
+      } catch (error) {
+        // Mejor mostrar toda la info del error
+        console.error("❌ Error eliminando en servidor:", error);
+        if (error.response) {
+          console.error("Detalles del servidor:", error.response.data || error.response);
         }
-
-        await idbDelete(db, STORE_QUEUE, key);
-
-        // Quita de la UI comparando por local_id (no por id string)
-        this.registros = this.registros.filter((x) => String(x.local_id) !== String(key));
-
-        console.log("🗑️ Eliminado de cola local:", r);
-      } catch (e) {
-        console.error("❌ Error borrando de IndexedDB", e);
-        alert("Error eliminando offline");
+        alert("Error eliminando registro en servidor. Revisa consola para detalles.");
       }
     }
   }
