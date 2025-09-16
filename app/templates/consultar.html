@@ -14,15 +14,15 @@
   </div>
 
   <!-- Filtros -->
-  <div class="bg-white rounded-2xl shadow p-4">
-    <h2 class="text-base font-semibold mb-3">Filtros de búsqueda</h2>
-    <div class="flex flex-wrap items-end gap-4">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">Filtros de búsqueda</h2>
+    <div class="flex flex-wrap items-end gap-6">
 
       <!-- Planta -->
       <div>
         <label class="block font-normal text-sm mb-1">Planta</label>
         <select x-model="planta" @change="loadDestajos();buscar()" 
-                class="border rounded p-1 text-sm w-32">
+                class="border rounded p-2 text-base w-48">
           <option value="">TODAS</option>
           <template x-for="(p, idx) in plantas" :key="p.Planta ?? p">
             <option :value="p.Planta ?? p" x-text="p.Planta ?? p"></option>
@@ -34,7 +34,7 @@
       <div>
         <label class="block font-normal text-sm mb-1">Documento</label>
         <input x-model="documento" 
-              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+              class="border rounded p-2 text-base focus:ring-1 focus:ring-sky-500 w-40">
       </div>
 
       <!-- Desde -->
@@ -42,7 +42,7 @@
         <label class="block font-normal text-sm mb-1">Desde</label>
         <input type="date" 
               x-model="desde" 
-              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+              class="border rounded p-2 text-base focus:ring-1 focus:ring-sky-500 w-40">
       </div>
 
       <!-- Hasta -->
@@ -50,118 +50,219 @@
         <label class="block font-normal text-sm mb-1">Hasta</label>
         <input type="date" 
               x-model="hasta" 
-              class="border rounded p-1 text-sm focus:ring-1 focus:ring-sky-500 w-32">
+              class="border rounded p-2 text-base focus:ring-1 focus:ring-sky-500 w-40">
       </div>
 
       <!-- Botones en línea -->
-      <div class="flex flex-wrap gap-2 pt-5">
+      <div class="flex flex-wrap gap-4 pt-5">
         <button @click="buscar()" 
-                class="w-28 px-2 py-1 bg-sky-600 text-white rounded shadow text-sm text-center hover:bg-sky-700">
+                class="px-4 py-2 bg-sky-600 text-white rounded shadow text-base text-center hover:bg-sky-700">
           Buscar
         </button>
 
-        <a href="{{ url_for('web.destajos') }}"
-          class="w-28 px-2 py-1 bg-indigo-600 text-white rounded shadow text-sm text-center hover:bg-indigo-700">
-          Nuevo
-        </a>
-
         <button @click="exportarLiquidacion" 
-                class="w-28 px-2 py-1 bg-green-600 text-white rounded shadow text-sm text-center hover:bg-green-700">
+                class="px-4 py-2 bg-green-600 text-white rounded shadow text-base text-center hover:bg-green-700">
           Liquid.
         </button>
       </div>
-
     </div>
   </div>
 
 
 
 
+
   <!-- Resultados -->
-  <div class="bg-white rounded-2xl shadow p-4 overflow-auto">
-    <table class="min-w-full text-sm border-collapse">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="text-left p-2 font-semibold">Fecha</th>
-          <th class="text-left p-2 font-semibold">Empleado</th>
-          <th class="text-left p-2 font-semibold">Documento</th>
-          <th class="text-left p-2 font-semibold">Destajo</th>
-          <th class="text-right p-2 font-semibold">Cantidad</th>
-          <th class="text-left p-2 font-semibold">Usuario</th>
-          <th class="text-center p-2 font-semibold">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="r in registros" :key="r.local_id || r.id">
-          <tr class="border-b hover:bg-gray-50 transition">
+  <div class="bg-white rounded-2xl shadow p-4">
+    <h2 class="text-lg font-semibold mb-3">Resultados</h2>
 
-            <!-- Fecha -->
-            <td class="p-2">
-              <template x-if="!r._edit">
-                <span x-text="r.fecha"></span>
-              </template>
-              <template x-if="r._edit">
-                <input type="date" x-model="r.fecha" class="border rounded p-1">
-              </template>
-            </td>
+    <!-- Desktop: tabla -->
+    <div class="hidden md:block overflow-x-auto">
+      <table class="min-w-full text-sm border-collapse">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left p-2 font-semibold">Fecha</th>
+            <th class="text-left p-2 font-semibold">Empleado</th>
+            <th class="text-left p-2 font-semibold">Documento</th>
+            <th class="text-left p-2 font-semibold">Destajo</th>
+            <th class="text-right p-2 font-semibold">Cantidad</th>
+            <th class="text-left p-2 font-semibold">Usuario</th>
+            <th class="text-center p-2 font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="r in registros" :key="r.local_id || r.id">
+            <tr class="border-b hover:bg-gray-50 transition">
 
-            <!-- Empleado -->
-            <td class="p-2" x-text="r.empleado_nombre"></td>
+              <!-- Fecha -->
+              <td class="p-2">
+                <template x-if="!r._edit">
+                  <span x-text="r.fecha"></span>
+                </template>
+                <template x-if="r._edit">
+                  <input type="date" x-model="r.fecha" class="border rounded p-1 text-sm md:text-base">
+                </template>
+              </td>
 
-            <!-- Documento -->
-            <td class="p-2" x-text="r.empleado_documento"></td>
+              <!-- Empleado -->
+              <td class="p-2" x-text="r.empleado_nombre"></td>
 
-            <!-- Destajo -->
-            <td class="p-2">
-              <span x-show="!r._edit" x-text="destajosMap.get(Number(r.destajo_id)) || '—'"></span>
-              <select 
-                x-show="r._edit" 
-                x-model.number="r.destajo_id" 
-                class="border rounded p-1 w-48">
+              <!-- Documento -->
+              <td class="p-2" x-text="r.empleado_documento"></td>
+
+              <!-- Destajo -->
+              <td class="p-2">
+                <template x-if="!r._edit">
+                  <span x-text="destajosMap.get(Number(r.destajo_id)) || '—'"></span>
+                </template>
+                <template x-if="r._edit">
+                  <select x-model.number="r.destajo_id" class="border rounded p-1 text-sm md:text-base w-36 md:w-48">
+                    <template x-for="d in destajos" :key="d.id">
+                      <option :value="d.id" :selected="d.id === Number(r.destajo_id)" x-text="d.concepto"></option>
+                    </template>
+                  </select>
+                </template>
+              </td>
+
+              <!-- Cantidad -->
+              <td class="p-2 text-right">
+                <template x-if="!r._edit">
+                  <span x-text="r.cantidad"></span>
+                </template>
+                <template x-if="r._edit">
+                  <input type="number" step="0.1" min="1" x-model.number="r.cantidad" 
+                        class="border rounded p-1 text-sm md:text-base w-20 md:w-24 text-right">
+                </template>
+              </td>
+
+              <!-- Usuario -->
+              <td class="p-2" x-text="r.usuario_nombre"></td>
+
+              <!-- Acciones -->
+              <td class="p-2 text-center">
+                <template x-if="!r._edit">
+                  <div class="flex justify-center space-x-2 flex-wrap">
+                    <template x-if="isAdmin || userId == r.usuario_id">
+                      <button @click="editar(r)" class="px-3 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200 text-sm">Editar</button>
+                    </template>
+                    <template x-if="isAdmin">
+                      <button @click="eliminar(r)" class="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm">Eliminar</button>
+                    </template>
+                  </div>
+                </template>
+
+                <template x-if="r._edit">
+                  <div class="flex justify-center space-x-2 flex-wrap">
+                    <button @click="guardar(r)" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm">Guardar</button>
+                    <button @click="cancelar(r)" class="px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm">Cancelar</button>
+                  </div>
+                </template>
+              </td>
+
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: tarjetas -->
+    <div class="md:hidden space-y-4 text-sm">
+      <template x-for="r in registros" :key="r.local_id || r.id">
+        <div class="border rounded-lg p-3 shadow-sm bg-gray-50">
+
+          <!-- Fecha -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Fecha:</span>
+            <template x-if="!r._edit">
+              <span class="text-xs" x-text="r.fecha"></span>
+            </template>
+            <template x-if="r._edit">
+              <input type="date" x-model="r.fecha" class="border rounded p-1 text-xs w-28">
+            </template>
+          </div>
+
+          <!-- Empleado -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Empleado:</span>
+            <span class="text-xs" x-text="r.empleado_nombre"></span>
+          </div>
+
+          <!-- Documento -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Documento:</span>
+            <span class="text-xs" x-text="r.empleado_documento"></span>
+          </div>
+
+          <!-- Destajo -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Destajo:</span>
+            <template x-if="!r._edit">
+              <span class="text-xs" x-text="destajosMap.get(Number(r.destajo_id)) || '—'"></span>
+            </template>
+            <template x-if="r._edit">
+              <select x-model.number="r.destajo_id" class="border rounded p-1 text-xs w-32">
                 <template x-for="d in destajos" :key="d.id">
-                  <option :value="d.id" :selected="d.id === Number(r.destajo_id)" x-text="d.concepto"> </option>
+                  <option :value="d.id" :selected="d.id === Number(r.destajo_id)" x-text="d.concepto"></option>
                 </template>
               </select>
-            </td>
+            </template>
+          </div>
 
-            <!-- Cantidad -->
-            <td class="p-2 text-right">
-              <template x-if="!r._edit">
-                <span x-text="r.cantidad"></span>
-              </template>
-              <template x-if="r._edit">
-                <input type="number" step="0.1" min="1" x-model.number="r.cantidad" class="border rounded p-1 w-24 text-right">
-              </template>
-            </td>
+          <!-- Cantidad -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Cantidad:</span>
+            <template x-if="!r._edit">
+              <span class="text-xs" x-text="r.cantidad"></span>
+            </template>
+            <template x-if="r._edit">
+              <input type="number" step="0.1" min="1" x-model.number="r.cantidad" class="border rounded p-1 text-xs w-20 text-right">
+            </template>
+          </div>
 
-            <td class="p-2" x-text="r.usuario_nombre"></td>
+          <!-- Usuario -->
+          <div class="flex justify-between mb-1">
+            <span class="font-semibold">Usuario:</span>
+            <span class="text-xs" x-text="r.usuario_nombre"></span>
+          </div>
 
-            <!-- Acciones -->
-            <td class="p-2 text-center">
-              <template x-if="!r._edit">
-                <div class="flex justify-center space-x-2">
-                  <template x-if="isAdmin || userId == r.usuario_id">
-                    <button @click="editar(r)" class="px-2 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200">Editar</button>
-                  </template>
-                  <template x-if="isAdmin">
-                    <button @click="eliminar(r)" class="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200">Eliminar</button>
-                  </template>
-                </div>
-              </template>
+          <!-- Acciones -->
+          <div class="flex flex-wrap justify-start gap-2 pt-2">
+            <!-- Mostrar siempre en DOM y controlar visibilidad -->
+            <button 
+                @click="editar(r)" 
+                x-show="!r._edit && (isAdmin || userId == r.usuario_id)"
+                class="px-3 py-1 bg-sky-100 text-sky-700 rounded hover:bg-sky-200 text-xs">
+              Editar
+            </button>
 
-              <template x-if="r._edit">
-                <div class="flex justify-center space-x-2">
-                  <button @click="guardar(r)" class="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">Guardar</button>
-                  <button @click="cancelar(r)" class="px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Cancelar</button>
-                </div>
-              </template>
-            </td>
+            <button 
+                @click="eliminar(r)" 
+                x-show="!r._edit && isAdmin"
+                class="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-xs">
+              Eliminar
+            </button>
 
-          </tr>
-        </template>
-      </tbody>
-    </table>
+            <button 
+                @click="guardar(r)" 
+                x-show="r._edit"
+                class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs">
+              Guardar
+            </button>
+
+            <button 
+                @click="cancelar(r)" 
+                x-show="r._edit"
+                class="px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-xs">
+              Cancelar
+            </button>
+          </div>
+
+        </div>
+      </template>
+    </div>
+
   </div>
+
 
 </div>
 {% endblock %}
