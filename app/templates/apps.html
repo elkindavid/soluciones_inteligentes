@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Apps{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-6">
+  <h1 class="text-3xl font-bold mb-6">Aplicaciones</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {% for app in apps %}
+    <a href="{{ app.Url }}"
+       class="block bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-6 text-center">
+       
+       <!-- Icono solo si existe -->
+       {% if app.Icono %}
+         <img src="{{ url_for('static', filename='images/' + app.Icono) }}"
+              alt="{{ app.Nombre }}"
+              class="h-16 w-16 mx-auto mb-4">
+       {% else %}
+         <!-- Ícono placeholder opcional -->
+         <div class="h-16 w-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
+           <span class="material-icons">apps</span>
+         </div>
+       {% endif %}
+       
+       <h2 class="text-xl font-bold text-blue-600 mb-1">{{ app.Nombre }}</h2>
+       <p class="text-gray-500">{{ app.Descripcion or 'Accede a ' ~ app.Nombre }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

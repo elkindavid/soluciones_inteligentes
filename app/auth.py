@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from .extensions import db, login_manager
@@ -62,6 +62,9 @@ def login():
 
         if user and user.check_password(password):
             login_user(user)
+              # ⬇️ guardar el rol en la sesión
+            session['role_id'] = user.rol_id
+
             flash("Inicio de sesión exitoso", "success")
             return redirect(url_for("web.home"))
 
