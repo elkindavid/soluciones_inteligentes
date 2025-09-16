@@ -2,6 +2,22 @@
 {% block title %}Apps{% endblock %}
 {% block content %}
 <div class="min-h-screen bg-gray-100 p-6">
+
+  <!-- 🔹 Botón Volver + Home -->
+  <div class="mb-3 d-flex">
+    <!-- Volver al historial -->
+    <button onclick="history.back()"
+            class="btn btn-outline-secondary me-2">
+      ⬅️ Volver
+    </button>
+
+    <!-- Ir al Home -->
+    <a href="/"
+       class="btn btn-outline-primary">
+      🏠 Inicio
+    </a>
+  </div>
+
   <h1 class="text-3xl font-bold mb-6">Aplicaciones</h1>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

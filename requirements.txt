@@ -10,3 +10,6 @@ gunicorn
 psycopg2-binary
 pandas==2.2.2
 openpyxl==3.1.5
+PuLP==3.2.2
+matplotlib==3.10.6
+seaborn==0.13.2

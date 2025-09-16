@@ -7,3 +7,7 @@ services:
     ports:
       - "5000:5000"
     restart: always
+    env_file:
+      - .env         # si usas variables de entorno
+    volumes:
+      - ./temp:/app/temp
