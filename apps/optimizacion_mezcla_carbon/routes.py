@@ -1,5 +1,6 @@
 # apps/optimizacion/routes.py
 from flask import Blueprint, render_template, request, send_file, session
+from flask_login import login_required, current_user
 from .modelo import procesar_archivo  # ajusta import según tu estructura
 import os
 import io
@@ -17,6 +18,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 global_df_sol = None
 
 @optimizacion_bp.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     global global_df_sol
     if request.method == 'POST':
@@ -56,6 +58,7 @@ def index():
     )
 
 @optimizacion_bp.route('/descargar_excel', endpoint='descargar_excel')
+@login_required
 def descargar_excel():
     global global_df_sol
     if global_df_sol is None:

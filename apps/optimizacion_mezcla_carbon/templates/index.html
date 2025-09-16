@@ -1,25 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Optimización de Compras de Carbón</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-</head>
-<body class="container py-4">
+{% extends 'base.html' %}
+{% block title %}Opt de Compras de Carbón{% endblock %}
 
-  <!-- 🔹 Barra de botones -->
-  <div class="mb-3 d-flex">
-    <button class="btn btn-outline-secondary me-2" onclick="history.back()">
-      ⬅️ Volver
-    </button>
-    <a href="/" class="btn btn-outline-primary">
-      🏠 Inicio
-    </a>
-  </div>
+{% block content %}
+<div class="container py-4">
 
-  <!-- 🔹 Quitamos el bloque de usuario / logout -->
-  <h2 class="mb-4 text-center">🧮 Modelo de Optimización de Compras de Carbón</h2>
+  <h2 class="mb-4 text-center fs-2">🧮 Modelo de Optimización de Compras de Carbón</h2>
 
   <form method="POST" enctype="multipart/form-data">
     <!-- Sección 1: Cargar archivo -->
@@ -122,5 +107,6 @@
     });
   </script>
   {% endif %}
-</body>
-</html>
+
+</div>
+{% endblock %}

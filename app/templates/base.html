@@ -14,7 +14,11 @@
 <body class="bg-slate-50 text-slate-800">
   <nav class="bg-white shadow sticky top-0 z-10">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-      <a href="/" class="font-semibold text-sky-600">Carbomaz • Apps</a>
+      <div class="flex items-center gap-2 text-sky-600 font-semibold">
+        <a href="/">Home</a>
+        <span>•</span>
+        <a href="javascript:void(0)" onclick="history.back()">Volver</a>
+      </div>
       
       <div class="flex items-center space-x-4">
         {% if current_user.is_authenticated %}
