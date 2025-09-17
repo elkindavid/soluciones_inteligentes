@@ -304,7 +304,7 @@ window.destajosForm = function(){
       if(navigator.onLine){
         try {
           await API.post('/api/registros', payload);
-          // ⚡️ Muestra chulo verde
+          // ⚡️ Muestra toast
           this.showSuccess = true;
           this.status = '';
           // Ocúltalo después de 2 s

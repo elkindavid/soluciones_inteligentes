@@ -11,7 +11,7 @@
 
   <!-- Bloque de Registro -->
   <div x-init="initDB()"> <!-- IndexedDB abre al cargar -->
-    <div x-data="destajosForm()" class="bg-white rounded-2xl shadow p-6 max-w-full overflow-hidden">
+    <div x-data="destajosForm()" class="bg-white rounded-2xl shadow p-6 max-w-full overflow-hidden relative">
       <h2 class="text-xl font-semibold mb-4">Nuevo registro</h2>
       <form @submit.prevent="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         
@@ -19,7 +19,6 @@
         <div>
           <label class="block text-sm">Planta</label>
           <select x-model="planta" @change="onPlantaChange()" class="w-full border rounded p-2">
-            <!-- primer item placeholder -->
             <option value="">Seleccione…</option>
             <template x-for="p in plantas" :key="p.Planta">
               <option :value="p.Planta" x-text="p.nombre || p.Planta"></option>
@@ -51,8 +50,7 @@
         <!-- Destajo -->
         <div>
           <label class="block text-sm">Destajo</label>
-          <select x-model.number="destajo_id"
-                  class="w-full border rounded p-2">
+          <select x-model.number="destajo_id" class="w-full border rounded p-2">
             <template x-for="(d, index) in destajos" :key="d.id || index">
               <option :value="d.id" x-text="d.concepto"></option>
             </template>
@@ -60,26 +58,21 @@
           <span class="text-red-500 text-sm" x-text="errores.destajo"></span>
         </div>
 
-
         <!-- Cantidad -->
         <div>
           <label class="block text-sm">Cantidad</label>
-          <input type="number" step="0.1" min="1"
-                 x-model.number="cantidad"
-                 class="w-full border rounded p-2">
+          <input type="number" step="0.1" min="1" x-model.number="cantidad" class="w-full border rounded p-2">
           <span class="text-red-500 text-sm" x-text="errores.cantidad"></span>
         </div>
 
         <!-- Fecha -->
         <div>
           <label class="block text-sm">Fecha</label>
-          <input type="date"
-                 x-model="fecha"
-                 class="w-full border rounded p-2">
+          <input type="date" x-model="fecha" class="w-full border rounded p-2">
           <span class="text-red-500 text-sm" x-text="errores.fecha"></span>
         </div>
 
-        <!-- Guardar -->
+        <!-- Guardar y Buscar -->
         <div class="flex items-end space-x-2 p-4">
           <button class="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 w-full md:w-28">
             Guardar
@@ -89,23 +82,17 @@
             class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 md:w-28 text-center">
             Buscar
           </a>
-          
-          <!-- chulo verde -->
-          <span
-            x-show="showSuccess"
-            x-transition
-            class="inline-flex items-center text-green-600 text-sm font-medium"
-          >
-            <svg class="w-5 h-5 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5 13l4 4L19 7" />
-            </svg>
-            Guardado
-          </span>
-
-          <span class="ml-3 text-sm text-gray-500" x-text="status"></span>
         </div>
       </form>
+
+      <!-- Toast de éxito -->
+      <div 
+        x-show="showSuccess"
+        x-transition.opacity.duration.500ms
+        class="fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50"
+      >
+        ✅ Registro guardado
+      </div>
     </div>
   </div>
 </div>
