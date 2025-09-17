@@ -15,12 +15,24 @@
       <label class="block text-sm">Contraseña</label>
       <input type="password" name="password" required class="w-full border rounded p-2">
     </div>
+
+    <!-- Nuevo campo: selección de rol -->
+    <div>
+      <label class="block text-sm">Rol</label>
+      <select name="rol_id" class="w-full border rounded p-2">
+        {% for rol in roles %}
+          <option value="{{ rol.RolID }}">{{ rol.Nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="mt-2">
       <label class="inline-flex items-center">
         <input type="checkbox" name="is_admin" class="form-checkbox">
         <span class="ml-2 text-sm">Hacer administrador</span>
       </label>
     </div>
+
     <button class="px-4 py-2 bg-sky-600 text-white rounded">Crear</button>
   </form>
 </div>

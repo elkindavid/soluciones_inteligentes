@@ -11,7 +11,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    rol_id = db.Column(db.Integer)
+    
+    # 🔹 FK hacia Roles
+    rol_id = db.Column(db.Integer, db.ForeignKey('Roles.RolID'))  # FK a Roles
+    rol = db.relationship("Roles", back_populates="usuarios")     # relación a Roles
 
     def to_dict(self):
         return {
@@ -20,9 +23,9 @@ class User(UserMixin, db.Model):
             "name": self.name,
             "password_hash": self.password_hash,
             "created_at": self.created_at,
-            "is_admin": self.is_admin
+            "is_admin": self.is_admin,
+            "rol_id": self.rol_id
         }
-    
     
     # Método para asignar la contraseña
     def set_password(self, password):
@@ -31,6 +34,17 @@ class User(UserMixin, db.Model):
     # Método para verificar la contraseña
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class Roles(db.Model):
+    __tablename__ = 'Roles'  # nombre de tu tabla en SQL Server
+    RolID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Nombre = db.Column(db.String(100), nullable=False, unique=True)
+
+    # relación inversa con usuarios (si quieres acceder a users desde Roles)
+    usuarios = db.relationship("User", back_populates="rol")
+
+    def __repr__(self):
+        return f"<Rol {self.Nombre}>"
 
 # 👇 OFFLINE (SQLite) — MISMA TABLA, OTRO BIND
 class LocalUser(UserMixin, db.Model):
@@ -42,6 +56,7 @@ class LocalUser(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    rol_id = db.Column(db.Boolean, default=False, nullable=False)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)

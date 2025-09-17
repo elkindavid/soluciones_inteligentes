@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from .extensions import db, login_manager
-from .models import User, LocalUser   # 👈 importa LocalUser
+from .models import User, LocalUser, Roles   # 👈 importa LocalUser
 from sqlalchemy.exc import OperationalError, InterfaceError
 from flask import current_app
 import logging
@@ -76,11 +76,15 @@ def login():
 @auth_bp.route("/register", methods=["GET", "POST"])
 @admin_required
 def register():
+    # Traer lista de roles para el form (cuando se hace GET)
+    roles = Roles.query.all()
+
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         name = request.form.get("name", "").strip()
         password = request.form.get("password", "")
         is_admin_flag = True if request.form.get("is_admin") == "on" else False
+        rol_id = request.form.get("rol_id")  # nuevo campo del formulario
 
         if User.query.filter_by(email=email).first():
             flash("Ese correo ya está registrado", "error")
@@ -89,14 +93,16 @@ def register():
                 email=email,
                 name=name,
                 password_hash=generate_password_hash(password),
-                is_admin=is_admin_flag
+                is_admin=is_admin_flag,
+                rol_id=rol_id  # guardas el rol seleccionado
             )
             db.session.add(user)
             db.session.commit()
             flash("Usuario creado", "success")
             return redirect(url_for("auth.listado"))
-    return render_template("auth_register.html")
-
+    
+    # Pasas roles al template para el select
+    return render_template("auth_register.html", roles=roles)
 
 # Cambiar contraseña
 @auth_bp.route("/change-password", methods=["GET", "POST"])
