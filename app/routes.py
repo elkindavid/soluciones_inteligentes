@@ -12,7 +12,7 @@ def home():
     user_role_id = current_user.rol_id  # ya mapeado en tu modelo User
     
     sql = text("""
-        SELECT a.AreaID, a.Nombre, a.Icono
+        SELECT DISTINCT a.AreaID, a.Nombre
         FROM Areas a
         JOIN Permisos p ON p.AreaID = a.AreaID
         WHERE p.RolID = :role_id
@@ -58,7 +58,7 @@ def areas():
     user_role_id = session['role_id']
     
     sql = text("""
-        SELECT a.AreaID, a.Nombre, a.Icono
+        SELECT DISTINCT a.AreaID, a.Nombre
         FROM Areas a
         JOIN Permisos p ON p.AreaID = a.AreaID
         WHERE p.RolID = :role_id
@@ -75,8 +75,10 @@ def apps(area_id):
     sql = text("""
         SELECT app.AppID, app.Nombre, app.Url, app.Icono
         FROM Apps app
-        JOIN Permisos p ON (p.AppID = app.AppID OR p.AreaID = app.AreaID)
-        WHERE app.AreaID = :area_id AND p.RolID = :role_id
+        JOIN Permisos p 
+        ON p.AppID = app.AppID
+        WHERE app.AreaID = :area_id
+        AND p.RolID = :role_id;
     """)
     rows = db.session.execute(sql, {
         'area_id': area_id,
