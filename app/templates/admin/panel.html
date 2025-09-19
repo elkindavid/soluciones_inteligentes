@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Panel de Permisos{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h1 class="text-3xl font-bold mb-6">Panel de Administración de Usuarios</h1>
+
+  <div class="row">
+    <!-- ÁREAS -->
+    <div class="col-md-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="h5 mb-0">Áreas</h2>
+          <a href="{{ url_for('admin.new_area') }}" class="btn btn-sm btn-outline-success">Nueva Área</a>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>AreaID</th>
+                <th>Nombre</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for area in areas %}
+              <tr>
+                <td>{{ area.AreaID }}</td>
+                <td>{{ area.Nombre }}</td>
+                <td>
+                  <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('admin.editar_area', area_id=area.AreaID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                    <form action="{{ url_for('admin.eliminar_area', area_id=area.AreaID) }}" method="post" style="display:inline;">
+                      <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar área?')">Eliminar</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="col-md-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="h5 mb-0">Roles</h2>
+          <a href="{{ url_for('admin.new_rol') }}" class="btn btn-sm btn-outline-success">Nuevo Rol</a>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>RolID</th>
+                <th>Nombre</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rol in roles %}
+              <tr>
+                <td>{{ rol.RolID }}</td>
+                <td>{{ rol.Nombre }}</td>
+                <td>
+                  <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('admin.editar_rol', rol_id=rol.RolID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                    <form action="{{ url_for('admin.eliminar_rol', rol_id=rol.RolID) }}" method="post" style="display:inline;">
+                      <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar rol?')">Eliminar</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  <!-- APPS -->
+  <div class="col-md-12 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Apps</h2>
+        <a href="{{ url_for('admin.new_app') }}" class="btn btn-sm btn-outline-success">Nueva App</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>AppID</th>
+              <th>Área</th>
+              <th>Nombre</th>
+              <th>Url</th>
+              <th>Icono</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in apps %}
+            <tr>
+              <td>{{ app.AppID }}</td>
+              <td>
+                {% set area = areas|selectattr("AreaID", "equalto", app.AreaID)|first %}
+                {{ area.Nombre if area else 'Sin Área' }}
+              </td>
+              <td>{{ app.Nombre }}</td>
+              <td>{{ app.Url }}</td>
+              <td>{{ app.Icono }}</td>
+              <td>
+                <div class="d-flex justify-content-end gap-2">
+                  <a href="{{ url_for('admin.editar_app', app_id=app.AppID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                  <form action="{{ url_for('admin.eliminar_app', app_id=app.AppID) }}" method="post" style="display:inline;">
+                    <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar App?')">Eliminar</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN DE CONFIGURACIÓN -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h2 class="h5 mb-0">Relación Apps / Áreas</h2>
+          <a href="{{ url_for('admin.matriz_apps_areas') }}" class="btn btn-sm btn-outline-success">Abrir</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h2 class="h5 mb-0">Configurar Permisos de Usuario</h2>
+          <a href="{{ url_for('admin.matriz_apps_roles') }}" class="btn btn-sm btn-outline-success">Abrir</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

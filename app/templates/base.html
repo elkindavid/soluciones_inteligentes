@@ -46,8 +46,14 @@
             <div 
               x-show="open && online" 
               @click.away="open = false" 
-              class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-20"
+              class="absolute right-0 mt-2 w-56 bg-white border rounded shadow-md z-20"
             >
+              {% if current_user.is_authenticated and current_user.superusuario %}
+                <a href="{{ url_for('admin.panel') }}" 
+                  class="block px-4 py-2 text-sm hover:bg-slate-100">
+                  ⚙️ Permisos de usuario
+                </a>
+              {% endif %}
               <a href="{{ url_for('auth.change_password') }}" class="block px-4 py-2 text-sm hover:bg-slate-100">🔑 Cambiar contraseña</a>
               
               {% if current_user.is_admin %}
@@ -68,16 +74,23 @@
   <main class="max-w-6xl mx-auto p-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="space-y-2">
-          {% for cat, msg in messages %}
-            <div class="p-3 rounded bg-yellow-50 border border-yellow-200">{{ msg }}</div>
+        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)">
+          {% for category, msg in messages %}
+            <div
+              x-show="show"
+              x-transition.opacity.duration.500ms
+              class="fixed top-5 right-5 
+                    {% if category == 'success' %}bg-green-500{% elif category == 'warning' %}bg-yellow-500{% elif category == 'danger' %}bg-red-500{% else %}bg-gray-500{% endif %} 
+                    text-white px-4 py-2 rounded shadow-lg z-50">
+              {{ msg }}
+            </div>
           {% endfor %}
         </div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
-  
+
   <script src="{{ url_for('static', filename='js/indexedDB.js') }}"></script>
   <script src="{{ url_for('static', filename='js/alpine.min.js') }}" defer></script>
 

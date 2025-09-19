@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-xl mb-4">Configurar Roles por App</h2>
+<form method="post">
+  <table class="table-auto border-collapse border border-gray-300 text-sm w-full">
+    <thead>
+      <tr>
+        <th class="border px-2 py-1">App</th>
+        {% for rol in roles %}
+          <th class="border px-2 py-1">{{ rol.Nombre }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in apps %}
+        <tr>
+          <td class="border px-2 py-1">{{ app.Nombre }}</td>
+          {% for rol in roles %}
+            {% set tiene_permiso = permisos|selectattr('RolID','equalto',rol.RolID)|selectattr('AppID','equalto',app.AppID)|list|length > 0 %}
+            <td class="border text-center">
+              <input type="checkbox" name="rol_app[{{ rol.RolID }}][{{ app.AppID }}]" {% if tiene_permiso %}checked{% endif %}>
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <button type="submit" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Guardar</button>
+</form>
+{% endblock %}

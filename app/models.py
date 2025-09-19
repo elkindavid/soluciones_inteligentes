@@ -11,10 +11,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    
-    # 🔹 FK hacia Roles
     rol_id = db.Column(db.Integer, db.ForeignKey('Roles.RolID'))  # FK a Roles
     rol = db.relationship("Roles", back_populates="usuarios")     # relación a Roles
+    superusuario = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         return {
@@ -45,6 +44,25 @@ class Roles(db.Model):
 
     def __repr__(self):
         return f"<Rol {self.Nombre}>"
+    
+class Area(db.Model):
+    __tablename__ = 'Areas'
+    AreaID = db.Column(db.Integer, primary_key=True)
+    Nombre = db.Column(db.String(100))
+
+class App(db.Model):
+    __tablename__ = 'Apps'
+    AppID = db.Column(db.Integer, primary_key=True)
+    AreaID = db.Column(db.Integer, db.ForeignKey('Areas.AreaID'))
+    Nombre = db.Column(db.String(100))
+    Url = db.Column(db.String(200))
+    Icono = db.Column(db.String(100))
+
+class Permiso(db.Model):
+    __tablename__ = 'Permisos'
+    PermisoID = db.Column(db.Integer, primary_key=True)
+    RolID = db.Column(db.Integer, db.ForeignKey('Roles.RolID'))
+    AppID = db.Column(db.Integer, db.ForeignKey('Apps.AppID'), nullable=True)
 
 # 👇 OFFLINE (SQLite) — MISMA TABLA, OTRO BIND
 class LocalUser(UserMixin, db.Model):

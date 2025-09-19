@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Editar App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h1 class="h3 mb-4">Editar App</h1>
+  
+  <form method="post">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre"
+             value="{{ app.Nombre }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="url" class="form-label">URL</label>
+      <input type="text" class="form-control" id="url" name="url"
+             value="{{ app.Url }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="icono" class="form-label">Icono</label>
+      <input type="text" class="form-control" id="icono" name="icono"
+             value="{{ app.Icono }}">
+      <small class="text-muted">Ejemplo: destajos.png</small>
+    </div>
+
+    <div class="mb-3">
+      <label for="area" class="form-label">Área</label>
+      <select class="form-select" id="area" name="area_id">
+        <option value="">Sin Área</option>
+        {% for area in areas %}
+          <option value="{{ area.AreaID }}" {% if area.AreaID == app.AreaID %}selected{% endif %}>
+            {{ area.Nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

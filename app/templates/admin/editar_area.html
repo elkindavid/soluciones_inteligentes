@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Editar Área{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h1 class="h3 mb-4">Editar Área</h1>
+  <form method="post">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre"
+             value="{{ area.Nombre }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

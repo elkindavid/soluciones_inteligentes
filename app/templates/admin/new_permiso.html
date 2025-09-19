@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Nuevo Permiso{% endblock %}
+{% block content %}
+<h1>Nuevo Permiso</h1>
+<form method="post">
+  <label>Rol</label>
+  <select name="rol_id">
+    {% for rol in roles %}
+      <option value="{{ rol.RolID }}">{{ rol.Nombre }}</option>
+    {% endfor %}
+  </select>
+  <label>App</label>
+  <select name="app_id">
+    {% for app in apps %}
+      <option value="{{ app.AppID }}">{{ app.Nombre }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Guardar</button>
+</form>
+{% endblock %}

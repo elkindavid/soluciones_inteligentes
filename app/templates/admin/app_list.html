@@ -1,0 +1,29 @@
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Url</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for app in apps %}
+    <tr>
+      <td>{{ app.AppID }}</td>
+      <td>{{ app.Nombre }}</td>
+      <td>{{ app.Url }}</td>
+      <td>
+        <!-- Botón Editar -->
+        <a href="{{ url_for('web_bp.editar_app', app_id=app.AppID) }}" class="btn btn-sm btn-warning">Editar</a>
+
+        <!-- Botón Eliminar -->
+        <form action="{{ url_for('web_bp.eliminar_app', app_id=app.AppID) }}" method="post" style="display:inline;">
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro de eliminar este registro?')">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+

@@ -14,7 +14,8 @@ def home():
     sql = text("""
         SELECT DISTINCT a.AreaID, a.Nombre
         FROM Areas a
-        JOIN Permisos p ON p.AreaID = a.AreaID
+        JOIN Apps app ON a.AreaID = app.AreaID
+        JOIN Permisos p ON p.AppID = app.AppID
         WHERE p.RolID = :role_id
     """)
     areas = db.session.execute(sql, {'role_id': user_role_id}).mappings().all()

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Área{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h1 class="h3 mb-4">Nueva Área</h1>
+  <form method="post">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input id="nombre" name="nombre" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-success">Guardar</button>
+  </form>
+</div>
+{% endblock %}
