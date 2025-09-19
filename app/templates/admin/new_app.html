@@ -1,31 +1,44 @@
 {% extends 'base.html' %}
 {% block title %}Nueva App{% endblock %}
+
 {% block content %}
-<h2 class="h5 mb-3">Apps por Áreas</h2>
-<form method="post" action="{{ url_for('admin.guardar_apps_areas') }}">
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Área</th>
-        {% for app in apps %}
-          <th>{{ app.Nombre }}</th>
+<div class="container my-4">
+  <h1 class="h3 mb-4">Nueva App</h1>
+  
+  <form method="post">
+    <!-- Nombre -->
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" required>
+    </div>
+
+    <!-- URL -->
+    <div class="mb-3">
+      <label for="url" class="form-label">URL</label>
+      <input type="text" class="form-control" id="url" name="url" placeholder="https://..." required>
+    </div>
+
+    <!-- Icono -->
+    <div class="mb-3">
+      <label for="icono" class="form-label">Icono</label>
+      <input type="text" class="form-control" id="icono" name="icono" placeholder="destajos.png">
+      <small class="text-muted">Ejemplo: destajos.png o fa-solid fa-chart-bar</small>
+    </div>
+
+    <!-- Área -->
+    <div class="mb-3">
+      <label for="area" class="form-label">Área</label>
+      <select class="form-select" id="area" name="area_id">
+        <!-- Enviar valor None si no selecciona área -->
+        <option value="" selected>Sin Área</option>
+        {% for area in areas %}
+          <option value="{{ area.AreaID }}">{{ area.Nombre }}</option>
         {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for area in areas %}
-      <tr>
-        <td>{{ area.Nombre }}</td>
-        {% for app in apps %}
-          <td class="text-center">
-            <input type="checkbox" name="area_app[{{ area.AreaID }}][]" value="{{ app.AppID }}"
-              {% if app.AreaID == area.AreaID %}checked{% endif %}>
-          </td>
-        {% endfor %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <button class="btn btn-primary">Guardar</button>
-</form>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary ms-2">Cancelar</a>
+  </form>
+</div>
 {% endblock %}

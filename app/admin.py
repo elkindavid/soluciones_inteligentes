@@ -23,22 +23,22 @@ def panel():
     permisos = Permiso.query.all()
     return render_template('admin/panel.html', apps=apps, areas=areas, roles=roles, permisos=permisos)
 
-@admin_bp.route('/apps/new', methods=['GET', 'POST'])
-@login_required
-def new_app():
-    if not solo_superusuario(): return redirect(url_for('web.index'))
-    if request.method == 'POST':
-        area_id = request.form['area_id']
-        nombre = request.form['nombre']
-        url = request.form['url']
-        icono = request.form['icono']
-        app = App(AreaID=area_id, Nombre=nombre, Url=url, Icono=icono)
-        db.session.add(app)
-        db.session.commit()
-        flash("App creada")
-        return redirect(url_for('admin.panel'))
-    areas = Area.query.all()
-    return render_template('admin/new_app.html', areas=areas)
+# @admin_bp.route('/apps/new', methods=['GET', 'POST'])
+# @login_required
+# def new_app():
+#     if not solo_superusuario(): return redirect(url_for('web.index'))
+#     if request.method == 'POST':
+#         area_id = request.form['area_id']
+#         nombre = request.form['nombre']
+#         url = request.form['url']
+#         icono = request.form['icono']
+#         app = App(AreaID=area_id, Nombre=nombre, Url=url, Icono=icono)
+#         db.session.add(app)
+#         db.session.commit()
+#         flash("App creada")
+#         return redirect(url_for('admin.panel'))
+#     areas = Area.query.all()
+#     return render_template('admin/new_app.html', areas=areas)
 
 @admin_bp.route('/apps/<int:app_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -295,3 +295,37 @@ def guardar_apps_roles():
     # aquí sí lanzas el mensaje
     flash('✅ Permisos Roles–Apps actualizados correctamente', 'success')
     return redirect(url_for('admin.matriz_apps_roles'))
+
+@admin_bp.route('/apps/new', methods=['GET', 'POST'])
+@login_required
+def new_app():
+    if not solo_superusuario():
+        return redirect(url_for('web.index'))
+
+    areas = db.session.query(Area).all()
+
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        url = request.form['url']
+        icono = request.form['icono']
+        area_id = request.form['area_id']
+
+        # corregir valor para el FK
+        if area_id == '' or area_id is None:
+            area_id = None
+        else:
+            area_id = int(area_id)
+
+        nueva_app = App(
+            Nombre=nombre,
+            Url=url,
+            Icono=icono,
+            AreaID=area_id
+        )
+
+        db.session.add(nueva_app)
+        db.session.commit()
+        flash('App creada correctamente', 'success')
+        return redirect(url_for('admin.panel'))
+
+    return render_template('admin/new_app.html', areas=areas)
