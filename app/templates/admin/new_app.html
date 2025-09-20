@@ -2,34 +2,37 @@
 {% block title %}Nueva App{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-  <h1 class="h3 mb-4">Nueva App</h1>
-  
-  <form method="post">
+<div class="max-w-3xl mx-auto my-6 p-4 bg-white shadow rounded-lg">
+  <h1 class="text-2xl font-semibold mb-6">Nueva App</h1>
+
+  <form method="post" class="space-y-4">
     <!-- Nombre -->
-    <div class="mb-3">
-      <label for="nombre" class="form-label">Nombre</label>
-      <input type="text" class="form-control" id="nombre" name="nombre" required>
+    <div>
+      <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+      <input type="text" id="nombre" name="nombre" required
+             class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
     </div>
 
     <!-- URL -->
-    <div class="mb-3">
-      <label for="url" class="form-label">URL</label>
-      <input type="text" class="form-control" id="url" name="url" placeholder="https://..." required>
+    <div>
+      <label for="url" class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+      <input type="text" id="url" name="url" placeholder="https://..." required
+             class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
     </div>
 
     <!-- Icono -->
-    <div class="mb-3">
-      <label for="icono" class="form-label">Icono</label>
-      <input type="text" class="form-control" id="icono" name="icono" placeholder="destajos.png">
-      <small class="text-muted">Ejemplo: destajos.png o fa-solid fa-chart-bar</small>
+    <div>
+      <label for="icono" class="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+      <input type="text" id="icono" name="icono" placeholder="destajos.png"
+             class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+      <small class="text-gray-500 text-sm">Ejemplo: destajos.png o fa-solid fa-chart-bar</small>
     </div>
 
     <!-- Área -->
-    <div class="mb-3">
-      <label for="area" class="form-label">Área</label>
-      <select class="form-select" id="area" name="area_id">
-        <!-- Enviar valor None si no selecciona área -->
+    <div>
+      <label for="area" class="block text-sm font-medium text-gray-700 mb-1">Área</label>
+      <select id="area" name="area_id"
+              class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
         <option value="" selected>Sin Área</option>
         {% for area in areas %}
           <option value="{{ area.AreaID }}">{{ area.Nombre }}</option>
@@ -37,8 +40,14 @@
       </select>
     </div>
 
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary ms-2">Cancelar</a>
+    <!-- Botones -->
+    <div class="flex items-center space-x-2 mt-4">
+      <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md">
+        Guardar
+      </button>
+      <a href="{{ url_for('admin.panel') }}" 
+         class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Cancelar</a>
+    </div>
   </form>
 </div>
 {% endblock %}

@@ -2,110 +2,108 @@
 {% block title %}Opt de Compras de Carbón{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="max-w-6xl mx-auto px-4 py-4">
 
-  <h2 class="mb-4 text-center fs-2">🧮 Modelo de Optimización de Compras de Carbón</h2>
+  <h2 class="mb-6 text-center text-2xl font-bold">🧮 Modelo de Optimización de Compras de Carbón</h2>
 
   <form method="POST" enctype="multipart/form-data">
-    <!-- Sección 1: Cargar archivo -->
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">📥 Cargar datos</div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label class="form-label">Archivo de datos (.xlsx):</label>
-          <input class="form-control" type="file" name="archivo"
-            {% if not session.get('archivo_path') %}required{% endif %}>
-          {% if session.get('archivo_path') %}
-            <small class="text-success">📁 Archivo cargado: {{ session['archivo_path'].split('/')[-1] }}</small>
-          {% endif %}
-        </div>
+
+    <!-- Cargar archivo -->
+    <div class="bg-white shadow rounded-lg mb-4">
+      <div class="bg-blue-500 text-white px-4 py-2 rounded-t-lg">📥 Cargar datos</div>
+      <div class="p-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Archivo de datos (.xlsx):</label>
+        <input type="file" name="archivo"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+          {% if not session.get('archivo_path') %}required{% endif %}>
+        {% if session.get('archivo_path') %}
+          <small class="text-green-600">📁 Archivo cargado: {{ session['archivo_path'].split('/')[-1] }}</small>
+        {% endif %}
       </div>
     </div>
 
-    <!-- Sección 2: Parámetros -->
-    <div class="card mb-4">
-      <div class="card-header bg-secondary text-white">⚙️ Parámetros del modelo</div>
-      <div class="card-body">
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" name="solo_mineros" id="solo_mineros"
-           {% if solo_mineros %}checked{% endif %}>
-          <label class="form-check-label" for="solo_mineros">✅ Solo incluir mineros</label>
-        </div>
+    <!-- Parámetros -->
+    <div class="bg-white shadow rounded-lg mb-4">
+      <div class="bg-gray-500 text-white px-4 py-2 rounded-t-lg">⚙️ Parámetros del modelo</div>
+      <div class="p-4">
+        <label class="inline-flex items-center space-x-2 mb-3">
+          <input type="checkbox" name="solo_mineros" id="solo_mineros"
+            class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring focus:ring-blue-200"
+            {% if solo_mineros %}checked{% endif %}>
+          <span class="text-sm text-gray-700">✅ Solo incluir mineros</span>
+        </label>
 
         <div class="mb-4">
-          <label for="limite" class="form-label">
-            🔒 Límite de participación de comercializadores: 
-            <span id="valor_limite">{{ limite_comercializadores }}</span>%
+          <label for="limite" class="block text-sm font-medium text-gray-700 mb-1">
+            🔒 Límite de participación: <span id="valor_limite">{{ limite_comercializadores }}</span>%
           </label>
-          <input type="range" class="form-range" name="limite" id="limite"
-                min="0" max="100" value="{{ limite_comercializadores }}"
-                oninput="document.getElementById('valor_limite').innerText = this.value">
+          <input type="range" name="limite" id="limite" min="0" max="100"
+            value="{{ limite_comercializadores }}"
+            oninput="document.getElementById('valor_limite').innerText = this.value"
+            class="w-full accent-blue-500">
         </div>
 
         <div class="mb-2">
-          <label class="form-label">🎯 Criterio de optimización:</label><br>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="modelo" id="modelo_precio" value="precio"
-            {% if modelo_usado != 'costo_ccb' %}checked{% endif %}>
-            <label class="form-check-label" for="modelo_precio">Minimizar Precio</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="modelo" id="modelo_costo_ccb" value="costo_ccb"
-            {% if modelo_usado == 'costo_ccb' %}checked{% endif %}>
-            <label class="form-check-label" for="modelo_costo_ccb">Minimizar Costo CCB</label>
-          </div>
+          <span class="block text-sm font-medium text-gray-700 mb-1">🎯 Criterio de optimización:</span>
+          <label class="inline-flex items-center space-x-2 mr-4">
+            <input type="radio" name="modelo" id="modelo_precio" value="precio"
+              class="rounded-full border-gray-300 text-blue-600 shadow-sm focus:ring focus:ring-blue-200"
+              {% if modelo_usado != 'costo_ccb' %}checked{% endif %}>
+            <span class="text-sm">Minimizar Precio</span>
+          </label>
+          <label class="inline-flex items-center space-x-2">
+            <input type="radio" name="modelo" id="modelo_costo_ccb" value="costo_ccb"
+              class="rounded-full border-gray-300 text-blue-600 shadow-sm focus:ring focus:ring-blue-200"
+              {% if modelo_usado == 'costo_ccb' %}checked{% endif %}>
+            <span class="text-sm">Minimizar Costo CCB</span>
+          </label>
         </div>
+
       </div>
     </div>
 
-    <!-- Botón ejecutar -->
-    <div class="text-center mb-5" enctype="multipart/form-data">
-      <button class="btn btn-lg btn-primary">🚀 Ejecutar modelo</button>
+    <!-- Botón -->
+    <div class="text-center mb-5">
+      <button class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg text-lg">🚀 Ejecutar modelo</button>
     </div>
   </form>
 
   {% if estado %}
   <!-- Resultados -->
-  <div class="card mb-4">
-    <div class="card-header bg-success text-white">✅ Resultados del modelo</div>
-    <div class="card-body">
-      <h5>📌 Estado del modelo: {{ estado }}</h5>
-      <h5>🧠 Criterio de optimización usado: {{ 'Costo CCB' if modelo_usado == 'costo_ccb' else 'Precio' }}</h5>
-      <a href="{{ url_for('optimizacion.descargar_excel') }}" class="btn btn-success my-3">📥 Descargar resultados en Excel</a>
+  <div class="bg-white shadow rounded-lg mb-4">
+    <div class="bg-green-500 text-white px-4 py-2 rounded-t-lg">✅ Resultados del modelo</div>
+    <div class="p-4">
+      <h5 class="mb-2">📌 Estado del modelo: {{ estado }}</h5>
+      <h5 class="mb-2">🧠 Criterio de optimización usado: {{ 'Costo CCB' if modelo_usado == 'costo_ccb' else 'Precio' }}</h5>
+      <a href="{{ url_for('optimizacion.descargar_excel') }}"
+         class="inline-block bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg my-3">
+         📥 Descargar resultados en Excel
+      </a>
     </div>
   </div>
 
   <div class="mb-4">
-    <h5>📊 Tabla de resultados</h5>
+    <h5 class="text-lg font-semibold mb-2">📊 Tabla de resultados</h5>
     {{ tabla_resultados|safe }}
   </div>
 
   <div class="mb-5">
-    <h5>📈 Calidad y rendimiento alcanzado</h5>
-    {{ tabla_resumen|safe }}
+    <h5 class="text-lg font-semibold mb-2">📈 Calidad y rendimiento alcanzado</h5>
+    <div class="overflow-x-auto">
+      {{ tabla_resumen|safe }}
+    </div>
   </div>
 
   <!-- Gráficos -->
   <div class="text-center mt-5">
-    <h5>Distribución por tipo de carbón</h5>
-    <img src="data:image/png;base64,{{ grafico_torta }}" class="img-fluid" style="width: 50%; height: auto;">
+    <h5 class="text-lg font-semibold mb-2">Distribución por tipo de carbón</h5>
+    <img src="data:image/png;base64,{{ grafico_torta }}" class="mx-auto mt-2" style="width:50%;height:auto;">
   </div>
 
-  <div class="mt-5">
-    <h5 class="text-center">Compra óptima por mina y pila</h5>
-    <div class="d-flex justify-content-center">
-      <img src="data:image/png;base64,{{ grafico_barras }}" class="img-fluid" style="width: 100%; max-width: 1200px;">
-    </div>
+  <div class="mt-5 text-center">
+    <h5 class="text-lg font-semibold mb-2">Compra óptima por mina y pila</h5>
+    <img src="data:image/png;base64,{{ grafico_barras }}" class="mx-auto mt-2" style="width:100%; max-width:1200px;">
   </div>
-
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-  <script>
-    $(document).ready(function () {
-      $('#tabla_resultados').DataTable();
-    });
-  </script>
   {% endif %}
 
 </div>

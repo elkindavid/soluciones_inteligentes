@@ -1,36 +1,89 @@
 {% extends 'base.html' %}
 {% block title %}Panel de Permisos{% endblock %}
+
 {% block content %}
-<div class="container my-4">
+<div class="max-w-7xl mx-auto my-6 px-4">
+
   <h1 class="text-3xl font-bold mb-6">Panel de Administración de Usuarios</h1>
 
-  <div class="row">
-    <!-- ÁREAS -->
-    <div class="col-md-12 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h2 class="h5 mb-0">Áreas</h2>
-          <a href="{{ url_for('admin.new_area') }}" class="btn btn-sm btn-outline-success">Nueva Área</a>
+  <!-- KPIs Sobrios con Iconos -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <!-- Áreas -->
+    <div class="bg-gray-100 text-gray-800 rounded-lg shadow p-4 flex items-center gap-4 border border-gray-300">
+      <div class="text-gray-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-8l7-4 7 4v8M5 21h14a2 2 0 002-2v-7a2 2 0 00-1-1.732L12 3 2 12.268A2 2 0 001 14v5a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div class="flex flex-col">
+        <div class="text-sm font-medium uppercase">Áreas</div>
+        <div class="text-2xl font-semibold">{{ areas|length }}</div>
+      </div>
+    </div>
+
+    <!-- Roles -->
+    <div class="bg-gray-100 text-gray-800 rounded-lg shadow p-4 flex items-center gap-4 border border-gray-300">
+      <div class="text-gray-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8zM12 11v2m0 4h.01" />
+        </svg>
+      </div>
+      <div class="flex flex-col">
+        <div class="text-sm font-medium uppercase">Roles</div>
+        <div class="text-2xl font-semibold">{{ roles|length }}</div>
+      </div>
+    </div>
+
+    <!-- Apps -->
+    <div class="bg-gray-100 text-gray-800 rounded-lg shadow p-4 flex items-center gap-4 border border-gray-300">
+      <div class="text-gray-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </div>
+      <div class="flex flex-col">
+        <div class="text-sm font-medium uppercase">Apps</div>
+        <div class="text-2xl font-semibold">{{ apps|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PESTAÑAS -->
+  <div x-data="{ tab: 'areas' }">
+    <!-- Botones de pestañas -->
+    <div class="flex border-b border-gray-300 mb-4">
+      <button @click="tab = 'areas'" :class="tab === 'areas' ? 'border-b-2 border-gray-800 font-semibold' : ''" class="px-4 py-2 text-gray-700">Áreas</button>
+      <button @click="tab = 'roles'" :class="tab === 'roles' ? 'border-b-2 border-gray-800 font-semibold' : ''" class="px-4 py-2 text-gray-700">Roles</button>
+      <button @click="tab = 'apps'" :class="tab === 'apps' ? 'border-b-2 border-gray-800 font-semibold' : ''" class="px-4 py-2 text-gray-700">Apps</button>
+    </div>
+
+    <!-- TAB ÁREAS -->
+    <div x-show="tab === 'areas'" x-cloak>
+      <!-- Copia tu tabla de Áreas aquí -->
+      <div class="mb-6 bg-white shadow rounded-lg overflow-hidden">
+        <div class="flex justify-between items-center bg-gray-100 px-4 py-2">
+          <h2 class="text-lg font-semibold">Áreas</h2>
+          <a href="{{ url_for('admin.new_area') }}" class="bg-gray-800 hover:bg-gray-900 text-white text-sm px-3 py-1 rounded">Nueva Área</a>
         </div>
-        <div class="card-body p-0">
-          <table class="table table-striped mb-0">
-            <thead>
+        <div class="overflow-x-auto">
+          <table class="min-w-full border border-gray-300 divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
               <tr>
-                <th>AreaID</th>
-                <th>Nombre</th>
-                <th></th>
+                <th class="border px-3 py-1 text-left">AreaID</th>
+                <th class="border px-3 py-1 text-left">Nombre</th>
+                <th class="border px-3 py-1 text-left"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="bg-white">
               {% for area in areas %}
-              <tr>
-                <td>{{ area.AreaID }}</td>
-                <td>{{ area.Nombre }}</td>
-                <td>
-                  <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ url_for('admin.editar_area', area_id=area.AreaID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+              <tr class="even:bg-gray-50">
+                <td class="border px-3 py-1">{{ area.AreaID }}</td>
+                <td class="border px-3 py-1">{{ area.Nombre }}</td>
+                <td class="border px-3 py-1 text-right">
+                  <div class="flex justify-end gap-2">
+                    <a href="{{ url_for('admin.editar_area', area_id=area.AreaID) }}" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded">Editar</a>
                     <form action="{{ url_for('admin.eliminar_area', area_id=area.AreaID) }}" method="post" style="display:inline;">
-                      <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar área?')">Eliminar</button>
+                      <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded" onclick="return confirm('¿Eliminar área?')">Eliminar</button>
                     </form>
                   </div>
                 </td>
@@ -42,32 +95,33 @@
       </div>
     </div>
 
-    <!-- ROLES -->
-    <div class="col-md-12 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h2 class="h5 mb-0">Roles</h2>
-          <a href="{{ url_for('admin.new_rol') }}" class="btn btn-sm btn-outline-success">Nuevo Rol</a>
+    <!-- TAB ROLES -->
+    <div x-show="tab === 'roles'" x-cloak>
+      <!-- Copia tu tabla de Roles aquí -->
+      <div class="mb-6 bg-white shadow rounded-lg overflow-hidden">
+        <div class="flex justify-between items-center bg-gray-100 px-4 py-2">
+          <h2 class="text-lg font-semibold">Roles</h2>
+          <a href="{{ url_for('admin.new_rol') }}" class="bg-gray-800 hover:bg-gray-900 text-white text-sm px-3 py-1 rounded">Nuevo Rol</a>
         </div>
-        <div class="card-body p-0">
-          <table class="table table-striped mb-0">
-            <thead>
+        <div class="overflow-x-auto">
+          <table class="min-w-full border border-gray-300 divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
               <tr>
-                <th>RolID</th>
-                <th>Nombre</th>
-                <th></th>
+                <th class="border px-3 py-1 text-left">RolID</th>
+                <th class="border px-3 py-1 text-left">Nombre</th>
+                <th class="border px-3 py-1"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="bg-white">
               {% for rol in roles %}
-              <tr>
-                <td>{{ rol.RolID }}</td>
-                <td>{{ rol.Nombre }}</td>
-                <td>
-                  <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ url_for('admin.editar_rol', rol_id=rol.RolID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+              <tr class="even:bg-gray-50">
+                <td class="border px-3 py-1">{{ rol.RolID }}</td>
+                <td class="border px-3 py-1">{{ rol.Nombre }}</td>
+                <td class="border px-3 py-1 text-right">
+                  <div class="flex justify-end gap-2">
+                    <a href="{{ url_for('admin.editar_rol', rol_id=rol.RolID) }}" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded">Editar</a>
                     <form action="{{ url_for('admin.eliminar_rol', rol_id=rol.RolID) }}" method="post" style="display:inline;">
-                      <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar rol?')">Eliminar</button>
+                      <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded" onclick="return confirm('¿Eliminar rol?')">Eliminar</button>
                     </form>
                   </div>
                 </td>
@@ -79,71 +133,65 @@
       </div>
     </div>
 
-  <!-- APPS -->
-  <div class="col-md-12 mb-4">
-    <div class="card shadow-sm">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="h5 mb-0">Apps</h2>
-        <a href="{{ url_for('admin.new_app') }}" class="btn btn-sm btn-outline-success">Nueva App</a>
-      </div>
-      <div class="card-body p-0">
-        <table class="table table-striped mb-0">
-          <thead>
-            <tr>
-              <th>AppID</th>
-              <th>Área</th>
-              <th>Nombre</th>
-              <th>Url</th>
-              <th>Icono</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for app in apps %}
-            <tr>
-              <td>{{ app.AppID }}</td>
-              <td>
-                {% set area = areas|selectattr("AreaID", "equalto", app.AreaID)|first %}
-                {{ area.Nombre if area else 'Sin Área' }}
-              </td>
-              <td>{{ app.Nombre }}</td>
-              <td>{{ app.Url }}</td>
-              <td>{{ app.Icono }}</td>
-              <td>
-                <div class="d-flex justify-content-end gap-2">
-                  <a href="{{ url_for('admin.editar_app', app_id=app.AppID) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                  <form action="{{ url_for('admin.eliminar_app', app_id=app.AppID) }}" method="post" style="display:inline;">
-                    <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar App?')">Eliminar</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <!-- TAB APPS -->
+    <div x-show="tab === 'apps'" x-cloak>
+      <!-- Copia tu tabla de Apps aquí -->
+      <div class="mb-6 bg-white shadow rounded-lg overflow-hidden">
+        <div class="flex justify-between items-center bg-gray-100 px-4 py-2">
+          <h2 class="text-lg font-semibold">Apps</h2>
+          <a href="{{ url_for('admin.new_app') }}" class="bg-gray-800 hover:bg-gray-900 text-white text-sm px-3 py-1 rounded">Nueva App</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full border border-gray-300 divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="border px-3 py-1">AppID</th>
+                <th class="border px-3 py-1">Área</th>
+                <th class="border px-3 py-1">Nombre</th>
+                <th class="border px-3 py-1">Url</th>
+                <th class="border px-3 py-1">Icono</th>
+                <th class="border px-3 py-1"></th>
+              </tr>
+            </thead>
+            <tbody class="bg-white">
+              {% for app in apps %}
+              <tr class="even:bg-gray-50">
+                <td class="border px-3 py-1">{{ app.AppID }}</td>
+                <td class="border px-3 py-1">
+                  {% set area = areas|selectattr("AreaID", "equalto", app.AreaID)|first %}
+                  {{ area.Nombre if area else 'Sin Área' }}
+                </td>
+                <td class="border px-3 py-1">{{ app.Nombre }}</td>
+                <td class="border px-3 py-1">{{ app.Url }}</td>
+                <td class="border px-3 py-1">{{ app.Icono }}</td>
+                <td class="border px-3 py-1 text-right">
+                  <div class="flex justify-end gap-2">
+                    <a href="{{ url_for('admin.editar_app', app_id=app.AppID) }}" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded">Editar</a>
+                    <form action="{{ url_for('admin.eliminar_app', app_id=app.AppID) }}" method="post" style="display:inline;">
+                      <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded" onclick="return confirm('¿Eliminar App?')">Eliminar</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- SECCIÓN DE CONFIGURACIÓN -->
-  <div class="row">
-    <div class="col-md-6 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <h2 class="h5 mb-0">Relación Apps / Áreas</h2>
-          <a href="{{ url_for('admin.matriz_apps_areas') }}" class="btn btn-sm btn-outline-success">Abrir</a>
-        </div>
-      </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white shadow rounded-lg p-4 flex justify-between items-center border border-gray-300">
+      <h2 class="text-lg font-semibold">Relación Apps / Áreas</h2>
+      <a href="{{ url_for('admin.matriz_apps_areas') }}" class="bg-gray-800 hover:bg-gray-900 text-white text-sm px-3 py-1 rounded">Abrir</a>
     </div>
-
-    <div class="col-md-6 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <h2 class="h5 mb-0">Configurar Permisos de Usuario</h2>
-          <a href="{{ url_for('admin.matriz_apps_roles') }}" class="btn btn-sm btn-outline-success">Abrir</a>
-        </div>
-      </div>
+    <div class="bg-white shadow rounded-lg p-4 flex justify-between items-center border border-gray-300">
+      <h2 class="text-lg font-semibold">Configurar Permisos de Usuario</h2>
+      <a href="{{ url_for('admin.matriz_apps_roles') }}" class="bg-gray-800 hover:bg-gray-900 text-white text-sm px-3 py-1 rounded">Abrir</a>
     </div>
   </div>
+
 </div>
 {% endblock %}

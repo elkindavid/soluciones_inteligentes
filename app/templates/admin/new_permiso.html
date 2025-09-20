@@ -1,20 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}Nuevo Permiso{% endblock %}
+
 {% block content %}
-<h1>Nuevo Permiso</h1>
-<form method="post">
-  <label>Rol</label>
-  <select name="rol_id">
-    {% for rol in roles %}
-      <option value="{{ rol.RolID }}">{{ rol.Nombre }}</option>
-    {% endfor %}
-  </select>
-  <label>App</label>
-  <select name="app_id">
-    {% for app in apps %}
-      <option value="{{ app.AppID }}">{{ app.Nombre }}</option>
-    {% endfor %}
-  </select>
-  <button type="submit">Guardar</button>
-</form>
+<div class="max-w-md mx-auto my-6 p-6 bg-white shadow rounded-lg">
+  <h1 class="text-2xl font-semibold mb-6">Nuevo Permiso</h1>
+
+  <form method="post" class="space-y-4">
+    <!-- Rol -->
+    <div>
+      <label for="rol_id" class="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+      <select id="rol_id" name="rol_id"
+              class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+        {% for rol in roles %}
+          <option value="{{ rol.RolID }}">{{ rol.Nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- App -->
+    <div>
+      <label for="app_id" class="block text-sm font-medium text-gray-700 mb-1">App</label>
+      <select id="app_id" name="app_id"
+              class="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+        {% for app in apps %}
+          <option value="{{ app.AppID }}">{{ app.Nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Botón Guardar -->
+    <button type="submit" 
+            class="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-md">
+      Guardar
+    </button>
+  </form>
+</div>
 {% endblock %}

@@ -1,30 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2 class="text-xl mb-4">Configurar Roles por App</h2>
+<h2 class="text-xl font-semibold mb-4">Configurar Roles por App</h2>
+
 <form method="post">
-  <table class="table-auto border-collapse border border-gray-300 text-sm w-full">
-    <thead>
-      <tr>
-        <th class="border px-2 py-1">App</th>
-        {% for rol in roles %}
-          <th class="border px-2 py-1">{{ rol.Nombre }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for app in apps %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
         <tr>
-          <td class="border px-2 py-1">{{ app.Nombre }}</td>
+          <th class="border border-gray-300 px-2 py-1 text-left">App</th>
+          {% for rol in roles %}
+            <th class="border border-gray-300 px-2 py-1 text-center">{{ rol.Nombre }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in apps %}
+        <tr class="even:bg-gray-50">
+          <td class="border border-gray-300 px-2 py-1 break-words">{{ app.Nombre }}</td>
           {% for rol in roles %}
             {% set tiene_permiso = permisos|selectattr('RolID','equalto',rol.RolID)|selectattr('AppID','equalto',app.AppID)|list|length > 0 %}
-            <td class="border text-center">
-              <input type="checkbox" name="rol_app[{{ rol.RolID }}][{{ app.AppID }}]" {% if tiene_permiso %}checked{% endif %}>
+            <td class="border border-gray-300 px-2 py-1 text-center">
+              <input type="checkbox" name="rol_app[{{ rol.RolID }}][{{ app.AppID }}]" 
+                     class="w-4 h-4 text-blue-600 rounded focus:ring focus:ring-blue-200"
+                     {% if tiene_permiso %}checked{% endif %}>
             </td>
           {% endfor %}
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <button type="submit" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Guardar</button>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4">
+    <button type="submit" 
+            class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded">
+      Guardar
+    </button>
+  </div>
 </form>
 {% endblock %}

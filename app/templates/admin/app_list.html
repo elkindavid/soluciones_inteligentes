@@ -1,29 +1,35 @@
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Nombre</th>
-      <th>Url</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for app in apps %}
-    <tr>
-      <td>{{ app.AppID }}</td>
-      <td>{{ app.Nombre }}</td>
-      <td>{{ app.Url }}</td>
-      <td>
-        <!-- Botón Editar -->
-        <a href="{{ url_for('web_bp.editar_app', app_id=app.AppID) }}" class="btn btn-sm btn-warning">Editar</a>
+<div class="overflow-x-auto">
+  <table class="min-w-full border border-gray-300 divide-y divide-gray-200 text-sm">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="border border-gray-300 px-3 py-2 text-left font-medium">ID</th>
+        <th class="border border-gray-300 px-3 py-2 text-left font-medium">Nombre</th>
+        <th class="border border-gray-300 px-3 py-2 text-left font-medium">Url</th>
+        <th class="border border-gray-300 px-3 py-2 text-left font-medium">Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white">
+      {% for app in apps %}
+      <tr class="even:bg-gray-50">
+        <td class="border border-gray-300 px-3 py-2">{{ app.AppID }}</td>
+        <td class="border border-gray-300 px-3 py-2">{{ app.Nombre }}</td>
+        <td class="border border-gray-300 px-3 py-2">{{ app.Url }}</td>
+        <td class="border border-gray-300 px-3 py-2 space-x-2">
+          <!-- Botón Editar -->
+          <a href="{{ url_for('web_bp.editar_app', app_id=app.AppID) }}" 
+             class="bg-yellow-400 hover:bg-yellow-500 text-white text-xs font-medium py-1 px-2 rounded">Editar</a>
 
-        <!-- Botón Eliminar -->
-        <form action="{{ url_for('web_bp.eliminar_app', app_id=app.AppID) }}" method="post" style="display:inline;">
-          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro de eliminar este registro?')">Eliminar</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
+          <!-- Botón Eliminar -->
+          <form action="{{ url_for('web_bp.eliminar_app', app_id=app.AppID) }}" method="post" class="inline">
+            <button type="submit" 
+                    class="bg-red-500 hover:bg-red-600 text-white text-xs font-medium py-1 px-2 rounded"
+                    onclick="return confirm('¿Seguro de eliminar este registro?')">
+              Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

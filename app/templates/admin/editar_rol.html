@@ -1,16 +1,32 @@
 {% extends 'base.html' %}
 {% block title %}Editar Rol{% endblock %}
+
 {% block content %}
-<div class="container my-4">
-  <h1 class="h3 mb-4">Editar Rol</h1>
-  <form method="post">
-    <div class="mb-3">
-      <label for="nombre" class="form-label">Nombre</label>
-      <input type="text" class="form-control" id="nombre" name="nombre"
-             value="{{ rol.Nombre }}" required>
+<div class="max-w-2xl mx-auto my-6 px-4">
+
+  <h1 class="text-2xl font-bold mb-6">Editar Rol</h1>
+
+  <form method="post" class="space-y-4">
+
+    <!-- Nombre -->
+    <div>
+      <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+      <input type="text" id="nombre" name="nombre" value="{{ rol.Nombre }}" required
+             class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
     </div>
-    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-    <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary">Cancelar</a>
+
+    <!-- Botones -->
+    <div class="flex space-x-3">
+      <button type="submit" 
+              class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg">
+        Guardar cambios
+      </button>
+      <a href="{{ url_for('admin.panel') }}" 
+         class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg">
+        Cancelar
+      </a>
+    </div>
+
   </form>
 </div>
 {% endblock %}
