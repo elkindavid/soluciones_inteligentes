@@ -360,6 +360,11 @@ def liquidacion_excel():
                   "IncapacidadDiasHab","Observaciones","Docentes"]:
             df_group[c] = ""
 
+        # Redondear a 2 decimales las columnas numéricas
+        df_group['ValorTotal'] = pd.to_numeric(df_group['ValorTotal'], errors='coerce').round(2)
+        df_group['Cantidad']   = pd.to_numeric(df_group['Cantidad'], errors='coerce').round(2)
+        df_group['Valor']      = pd.to_numeric(df_group['Valor'], errors='coerce').round(2)
+
         df_out = df_group[cols]
 
     # --- Guardar en memoria como .xlsx ---
