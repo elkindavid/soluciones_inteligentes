@@ -6,6 +6,7 @@ from .auth import auth_bp
 from .pwa import pwa_bp
 from apps.optimizacion_mezcla_carbon.routes import optimizacion_bp
 from .admin import admin_bp
+from apps.informe_logistico.routes import informes_bp
 from config import Config
 import socket
 
@@ -36,5 +37,6 @@ def create_app():
     app.register_blueprint(pwa_bp)
     app.register_blueprint(optimizacion_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(informes_bp)   # 👈 registrar aquí
 
     return app

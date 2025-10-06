@@ -108,3 +108,11 @@
 
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  $(document).ready(function () {
+    $('#tabla_resultados').DataTable();
+  });
+</script>
+{% endblock %}

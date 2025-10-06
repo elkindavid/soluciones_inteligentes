@@ -6,7 +6,7 @@ from config import Config
 SQLSERVER_HOST = "190.255.33.10"
 SQLSERVER_PORT = 2500
 
-def is_online(timeout=1.5):
+def is_online(timeout=30):
     try:
         with socket.create_connection((SQLSERVER_HOST, SQLSERVER_PORT), timeout=timeout):
             return True
