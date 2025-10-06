@@ -230,6 +230,7 @@ $("#num-alertas").text(registrosConAlerta);
 
         // Tabla
         let columnas = [
+            { data: "Fecha", title: "Fecha"},
             { data: "CentroLogistico", title: "Centro logístico"},
             { data: "NumeroPedido", title: "Pedido"},
             { data: "Posicion", title: "Pos.",},
@@ -249,6 +250,7 @@ $("#num-alertas").text(registrosConAlerta);
           tabla = $("#tabla").DataTable({
               data: res,
               columns: columnas,
+              order: [[0, 'desc']],
               paging: true,
               pageLength: 10,
               lengthMenu: [ [10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"] ],
