@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}CONTROL DE INGRESOS{% endblock %}
+
+<!-- {% block styles %}
+<link rel="stylesheet" href="{{ url_for('informes.static', filename='css/estilo.css') }}">
+{% endblock %} -->
+
+{% block content %}
+
+<div class="w-full mx-auto p-4">
+
+  <h1 class="mb-6 text-center text-2xl font-bold flex items-center justify-center gap-2">
+    <img src="{{ url_for('informes.static', filename='images/pi.png') }}" 
+         alt="PI" class="h-8 inline-block">
+    CONTROL DE INGRESOS
+  </h1>
+  
+  <p class="mb-6 text-sm text-gray-600 text-justify">
+    Esta vista está diseñada para conocer en tiempo real los ingresos de material comercial en los centros logísticos propios registrados a través del software de <strong>Pesaje Inteligente (PI)</strong>. 
+    Cubre escenarios de <em>Compras</em> (ingresos directos desde el proveedor), <em>Traslados</em> (ingresos por traslados entre centros propios) y <em>Terceros</em> (ingresos de material por acopio). 
+    Se puede conocer el total de toneladas de material en un rango de fechas y filtrar acorde a lo requerido.
+  </p>
+
+  <!-- Filtros -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="bg-blue-500 text-white px-4 py-2 rounded-t-lg">🔎 Filtros</div>
+    <div class="p-4 grid grid-cols-1 md:grid-cols-8 gap-4">
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de ingreso</label>
+        <select id="filtro-tipo" class="select2 w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-blue-200" multiple>
+          <option value="Compras" selected>Compras</option>
+          <option value="traslados">Traslados</option>
+          <option value="terceros">Terceros</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+        <input type="date" id="filtro-desde" class="w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-blue-200">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+        <input type="date" id="filtro-hasta" class="w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-blue-200">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Centro logístico</label>
+        <select id="filtro-centro" class="select2 w-full" multiple>
+          <option value="">Todos</option>
+          {% for c in centros %}
+            <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Material</label>
+        <select id="filtro-material" class="select2 w-full" multiple>
+          <option value="">Todos</option>
+          {% for m in materiales %}
+            <option value="{{ m }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+        <select id="filtro-proveedor" class="select2 w-full" multiple>
+          <option value="">Todos</option>
+          {% for p in proveedores %}
+            <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Almacén</label>
+        <select id="filtro-almacen" class="select2 w-full" multiple>
+          <option value="">Todos</option>
+          {% for a in almacenes %}
+            <option value="{{ a }}">{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Origen</label>
+        <select id="filtro-origen" class="select2 w-full" multiple>
+          <option value="">Todos</option>
+          {% for o in origenes %}
+            <option value="{{ o }}">{{ o }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjetas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-green-100 rounded-lg shadow p-4 text-center">
+      <h5 class="text-lg font-semibold mb-2">Ingreso Neto</h5>
+      <p class="text-2xl font-bold text-green-700" id="ingreso-neto">0 t</p>
+    </div>
+    <div class="bg-blue-100 rounded-lg shadow p-4 text-center">
+      <h5 class="text-lg font-semibold mb-2">Cant. Viajes</h5>
+      <p class="text-2xl font-bold text-blue-700" id="num-viajes">0</p>
+    </div>
+    <div class="bg-yellow-100 rounded-lg shadow p-4 text-center">
+      <h5 class="text-lg font-semibold mb-2">Cant. Proveedores</h5>
+      <p class="text-2xl font-bold text-yellow-700" id="num-proveedores">0</p>
+    </div>
+    <div class="bg-red-100 rounded-lg shadow p-4 text-center">
+      <h5 class="text-lg font-semibold mb-2">Registros con alerta</h5>
+      <p class="text-2xl font-bold text-red-700" id="num-alertas">0</p>
+    </div>    
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="bg-gray-500 text-white px-4 py-2 rounded-t-lg">📑 Resultados</div>
+    <div class="p-4 overflow-x-auto">
+      <table id="tabla" class="display nowrap w-full">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let tabla;
+
+// 🔄 Función para actualizar dinámicamente las listas de filtros
+function actualizarFiltros(origenFiltro = null) {
+    let params = {
+        tipo: ($("#filtro-tipo").val() || []).join(","), 
+        desde: $("#filtro-desde").val(),
+        hasta: $("#filtro-hasta").val(),
+        centro: ($("#filtro-centro").val() || []).join(","), 
+        material: ($("#filtro-material").val() || []).join(","), 
+        proveedor: ($("#filtro-proveedor").val() || []).join(","), 
+        almacen: ($("#filtro-almacen").val() || []).join(","), 
+        origen: ($("#filtro-origen").val() || []).join(",")
+    };
+
+    $.getJSON("/control_ingreso/filtros", params, function(data) {
+      
+      if(origenFiltro !== "filtro-centro") actualizarSelect("#filtro-centro", data.centros, params.centro);
+      if(origenFiltro !== "filtro-material") actualizarSelect("#filtro-material", data.materiales, params.material);
+      if(origenFiltro !== "filtro-proveedor") actualizarSelect("#filtro-proveedor", data.proveedores, params.proveedor);
+      if(origenFiltro !== "filtro-almacen") actualizarSelect("#filtro-almacen", data.almacenes, params.almacen);
+      if(origenFiltro !== "filtro-origen") actualizarSelect("#filtro-origen", data.origenes, params.origen);
+
+        // luego de refrescar filtros → recargar tabla
+        cargarDatos();
+    });
+}
+
+// 🛠 Función auxiliar para refrescar select2 manteniendo selecciones válidas
+function actualizarSelect(selector, opciones, seleccionados) {
+    let $select = $(selector);
+    let actuales = seleccionados ? seleccionados.split(",") : [];
+
+    $select.empty();
+    $.each(opciones, function(_, opcion) {
+        let opt = new Option(opcion, opcion, false, actuales.includes(opcion));
+        $select.append(opt);
+    });
+    $select.trigger("change.select2");
+}
+
+// 📊 Función para cargar tabla
+function cargarDatos() {
+    let btn = $("#btn-filtrar");
+    btn.prop("disabled", true).text("Cargando... ⏳");
+
+    let params = {
+        tipo: ($("#filtro-tipo").val() || []).join(","), 
+        desde: $("#filtro-desde").val(),
+        hasta: $("#filtro-hasta").val(),
+        centro: ($("#filtro-centro").val() || []).join(","), 
+        material: ($("#filtro-material").val() || []).join(","), 
+        proveedor: ($("#filtro-proveedor").val() || []).join(","), 
+        almacen: ($("#filtro-almacen").val() || []).join(","), 
+        origen: ($("#filtro-origen").val() || []).join(",")
+    };
+
+    $.getJSON("/control_ingreso/data", params, function(res) {
+        if (!res || res.length === 0) {
+            $("#ingreso-neto").text("0 t");
+            $("#num-viajes").text("0");
+            if (tabla) { tabla.clear().draw(); }
+            return;
+        }
+
+        // Totales
+        let totalToneladas = res.reduce((acc, x) => acc + (parseFloat(x.toneladas || x.Toneladas || 0)), 0);
+        let totalViajes = res.reduce((acc, x) => acc + (parseFloat(x.num_viajes || x.NumViajes || 1)), 0);
+        $("#ingreso-neto").text(totalToneladas.toFixed(2) + " t");
+        $("#num-viajes").text(totalViajes);
+
+        // 🟡 KPI Proveedores distintos
+        let proveedoresUnicos = [...new Set(res.map(x => x.Proveedor))];
+        $("#num-proveedores").text(proveedoresUnicos.length);
+
+        // 🟣 KPI Materiales distintos
+        let materialesUnicos = [...new Set(res.map(x => x.Material))];
+        $("#num-materiales").text(materialesUnicos.length);
+
+        // 🔴 KPI Registros con alerta
+        let registrosConAlerta = res.filter(row => {
+            return Object.values(row).some(val => {
+                if (val === null || val === undefined) return true;
+                if (typeof val === "string") {
+                    let v = val.trim().toLowerCase();
+                    return v === "" || v === "0" || v === "na" || v === "n/a" || v === "no aplica";
+                }
+                if (typeof val === "number") {
+                    return val === 0;
+                }
+                return false;
+            });
+        }).length;
+
+$("#num-alertas").text(registrosConAlerta);
+
+        // Tabla
+        let columnas = [
+            { data: "CentroLogistico", title: "Centro logístico"},
+            { data: "NumeroPedido", title: "Pedido"},
+            { data: "Posicion", title: "Pos.",},
+            { data: "CodMaterial", title: "Cód. Mat."},
+            { data: "Material", title: "Material" },
+            { data: "Almacen", title: "Almacén" },
+            { data: "Lote", title: "Lote"},
+            { data: "CodOrigen", title: "Cód. Origen"},
+            { data: "Origen", title: "Origen" },
+            { data: "CodProveedor", title: "Cod. Prov."},
+            { data: "Proveedor", title: "Proveedor" },
+            { data: "Toneladas", title: "Cant. Ton.", render: $.fn.dataTable.render.number('.', ',', 2, '')},
+            { data: "NumViajes", title: "Viajes"},
+            { data: "FechaUltimoMovimiento", title: "Fecha Último Reg."}
+        ];
+
+        if (!tabla) {
+          tabla = $("#tabla").DataTable({
+              data: res,
+              columns: columnas,
+              order: [[13, 'desc']],
+              paging: true,
+              pageLength: 10,
+              lengthMenu: [ [10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"] ],
+              searching: true,
+              ordering: true,
+              responsive: true,
+              scrollX: true,
+              destroy: true,
+              autoWidth: false,
+              dom: 'Blfrtip', // 'l' = select de registros por página
+              buttons: [
+                  // { extend: 'excelHtml5', text: '📊 Exportar a Excel', className: 'bg-green-500 text-white px-4 py-2 rounded-lg' },
+                  // { extend: 'pdfHtml5', text: '📄 Exportar a PDF', className: 'bg-red-500 text-white px-4 py-2 rounded-lg', orientation: 'landscape', pageSize: 'Legal' },
+                  // { extend: 'print', text: '🖨️ Imprimir', className: 'bg-gray-500 text-white px-4 py-2 rounded-lg' }
+              ],
+              language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json" },
+              initComplete: function () {
+                $("#tabla_wrapper").css("font-size", "11px");
+
+                // 👇 Recalcular anchos de columnas
+                this.api().columns.adjust();
+              }
+          });
+
+        } else {
+            tabla.clear();
+            tabla.rows.add(res);
+            tabla.draw();
+        }
+    }).fail(function(xhr) {
+        console.error("❌ Error AJAX:", xhr.status, xhr.responseText);
+        alert("Error al cargar los datos. Revisa la consola.");
+    }).always(function() {
+        btn.prop("disabled", false).text("Aplicar filtros");
+    });
+}
+
+$(document).ready(function() {
+    // Inicializar select2
+    $(".select2").select2({ placeholder: "Selecciona...", allowClear: true, width: "100%" });
+
+    // Fechas iniciales
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    $("#filtro-desde").val(primerDia.toISOString().split("T")[0]);
+    $("#filtro-hasta").val(ultimoDia.toISOString().split("T")[0]);
+
+    // Evento: cada vez que cambie algo en filtros → actualizar cascada
+    $("#filtro-tipo, #filtro-centro, #filtro-material, #filtro-proveedor, #filtro-almacen, #filtro-origen, #filtro-desde, #filtro-hasta")
+        .on("change", function() {
+          let id = $(this).attr("id");
+            actualizarFiltros(id);
+        });
+
+    // Carga inicial
+    actualizarFiltros();
+});
+</script>
+{% endblock %}
+
+

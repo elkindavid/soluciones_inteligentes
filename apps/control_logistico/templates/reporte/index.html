@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}INGRESOS{% endblock %}
+{% block title %}CONTROL LOGÍSTICO{% endblock %}
 
 <!-- {% block styles %}
 <link rel="stylesheet" href="{{ url_for('informes.static', filename='css/estilo.css') }}">
@@ -12,13 +12,13 @@
   <h1 class="mb-6 text-center text-2xl font-bold flex items-center justify-center gap-2">
     <img src="{{ url_for('informes.static', filename='images/pi.png') }}" 
          alt="PI" class="h-8 inline-block">
-    INGRESOS
+    CONTROL LOGÍSTICO
   </h1>
   
   <p class="mb-6 text-sm text-gray-600 text-justify">
     Esta vista está diseñada para conocer en tiempo real los ingresos de material comercial en los centros logísticos propios registrados a través del software de <strong>Pesaje Inteligente (PI)</strong>. 
-    Cubre escenarios de <em>Compras</em> (ingresos directos desde el proveedor), <em>Traslados</em> (ingresos por traslados entre centros propios) y <em>Terceros</em> (ingresos de material por acopio). 
-    Se puede conocer el total de toneladas de material en un rango de fechas y filtrar acorde a lo requerido.
+    Cubre escenarios de <em>Compras</em> (ingresos directos desde el proveedor) y <em>Traslados</em> (ingresos por traslados entre centros propios).  
+    Se puede conocer el detalle carro a carro con las toneladas de material entregado en un rango de fechas y filtrar acorde a lo requerido.
   </p>
 
   <!-- Filtros -->
@@ -31,7 +31,6 @@
         <select id="filtro-tipo" class="select2 w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-blue-200" multiple>
           <option value="Compras" selected>Compras</option>
           <option value="traslados">Traslados</option>
-          <option value="terceros">Terceros</option>
         </select>
       </div>
 
@@ -46,41 +45,10 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Centro logístico</label>
-        <select id="filtro-centro" class="select2 w-full" multiple>
-          <option value="">Todos</option>
-          {% for c in centros %}
-            <option value="{{ c }}">{{ c }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Material</label>
-        <select id="filtro-material" class="select2 w-full" multiple>
-          <option value="">Todos</option>
-          {% for m in materiales %}
-            <option value="{{ m }}">{{ m }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-        <select id="filtro-proveedor" class="select2 w-full" multiple>
-          <option value="">Todos</option>
-          {% for p in proveedores %}
+        <label class="block text-sm font-medium text-gray-700 mb-1">Pedido</label>
+        <select id="filtro-pedido" class="select2 w-full" multiple>
+          {% for p in pedidos %}
             <option value="{{ p }}">{{ p }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Almacén</label>
-        <select id="filtro-almacen" class="select2 w-full" multiple>
-          <option value="">Todos</option>
-          {% for a in almacenes %}
-            <option value="{{ a }}">{{ a }}</option>
           {% endfor %}
         </select>
       </div>
@@ -88,9 +56,44 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Origen</label>
         <select id="filtro-origen" class="select2 w-full" multiple>
-          <option value="">Todos</option>
           {% for o in origenes %}
             <option value="{{ o }}">{{ o }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Destino</label>
+        <select id="filtro-destino" class="select2 w-full" multiple>
+          {% for d in destinos %}
+            <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Transportadora</label>
+        <select id="filtro-transportadora" class="select2 w-full" multiple>
+          {% for t in transportadoras %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+        <select id="filtro-placa" class="select2 w-full" multiple>
+          {% for p in placas %}
+            <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor Material</label>
+        <select id="filtro-proveedor" class="select2 w-full" multiple>
+          {% for p in proveedores %}
+            <option value="{{ p }}">{{ p }}</option>
           {% endfor %}
         </select>
       </div>
@@ -136,29 +139,36 @@
 let tabla;
 
 // 🔄 Función para actualizar dinámicamente las listas de filtros
-function actualizarFiltros() {
+function actualizarFiltros(origenFiltro = null) {
     let params = {
         tipo: ($("#filtro-tipo").val() || []).join(","), 
         desde: $("#filtro-desde").val(),
         hasta: $("#filtro-hasta").val(),
-        centro: ($("#filtro-centro").val() || []).join(","), 
-        material: ($("#filtro-material").val() || []).join(","), 
-        proveedor: ($("#filtro-proveedor").val() || []).join(","), 
-        almacen: ($("#filtro-almacen").val() || []).join(","), 
-        origen: ($("#filtro-origen").val() || []).join(",")
+        pedido: ($("#filtro-pedido").val() || []).join(","), 
+        origen: ($("#filtro-origen").val() || []).join(","),
+        destino: ($("#filtro-destino").val() || []).join(","), 
+        transportadora: ($("#filtro-transportadora").val() || []).join(","), 
+        placa: ($("#filtro-placa").val() || []).join(","),
+        proveedor_mat: ($("#filtro-proveedor").val() || []).join(","), 
+        
+        
     };
 
     $.getJSON("/reporte/filtros", params, function(data) {
-        actualizarSelect("#filtro-centro", data.centros, params.centro);
-        actualizarSelect("#filtro-material", data.materiales, params.material);
-        actualizarSelect("#filtro-proveedor", data.proveedores, params.proveedor);
-        actualizarSelect("#filtro-almacen", data.almacenes, params.almacen);
-        actualizarSelect("#filtro-origen", data.origenes, params.origen);
-
+        // Actualizar solo los demás filtros, no el que disparó el evento
+        if (origenFiltro !== "filtro-pedido") actualizarSelect("#filtro-pedido", data.pedidos, params.pedido);
+        if (origenFiltro !== "filtro-origen") actualizarSelect("#filtro-origen", data.origenes, params.origen);
+        if (origenFiltro !== "filtro-destino") actualizarSelect("#filtro-destino", data.destinos, params.destino);
+        if (origenFiltro !== "filtro-transportadora") actualizarSelect("#filtro-transportadora", data.transportadoras, params.transportadora);
+        if (origenFiltro !== "filtro-placa") actualizarSelect("#filtro-placa", data.placas, params.placa);
+        if (origenFiltro !== "filtro-proveedor") actualizarSelect("#filtro-proveedor", data.proveedores, params.proveedor_mat);
+        
         // luego de refrescar filtros → recargar tabla
         cargarDatos();
     });
 }
+
+
 
 // 🛠 Función auxiliar para refrescar select2 manteniendo selecciones válidas
 function actualizarSelect(selector, opciones, seleccionados) {
@@ -182,11 +192,12 @@ function cargarDatos() {
         tipo: ($("#filtro-tipo").val() || []).join(","), 
         desde: $("#filtro-desde").val(),
         hasta: $("#filtro-hasta").val(),
-        centro: ($("#filtro-centro").val() || []).join(","), 
-        material: ($("#filtro-material").val() || []).join(","), 
-        proveedor: ($("#filtro-proveedor").val() || []).join(","), 
-        almacen: ($("#filtro-almacen").val() || []).join(","), 
-        origen: ($("#filtro-origen").val() || []).join(",")
+        pedido: ($("#filtro-pedido").val() || []).join(","), 
+        origen: ($("#filtro-origen").val() || []).join(","), 
+        destino: ($("#filtro-destino").val() || []).join(","), 
+        transportadora: ($("#filtro-transportadora").val() || []).join(","), 
+        placa: ($("#filtro-placa").val() || []).join(","),
+        proveedor_mat: ($("#filtro-proveedor").val() || []).join(",")
     };
 
     $.getJSON("/reporte/data", params, function(res) {
@@ -207,10 +218,6 @@ function cargarDatos() {
         let proveedoresUnicos = [...new Set(res.map(x => x.Proveedor))];
         $("#num-proveedores").text(proveedoresUnicos.length);
 
-        // 🟣 KPI Materiales distintos
-        let materialesUnicos = [...new Set(res.map(x => x.Material))];
-        $("#num-materiales").text(materialesUnicos.length);
-
         // 🔴 KPI Registros con alerta
         let registrosConAlerta = res.filter(row => {
             return Object.values(row).some(val => {
@@ -230,20 +237,27 @@ $("#num-alertas").text(registrosConAlerta);
 
         // Tabla
         let columnas = [
-            { data: "CentroLogistico", title: "Centro logístico"},
+            { data: "NumTiquete", title: "No Tiquete"},
             { data: "NumeroPedido", title: "Pedido"},
             { data: "Posicion", title: "Pos.",},
             { data: "CodMaterial", title: "Cód. Mat."},
             { data: "Material", title: "Material" },
-            { data: "Almacen", title: "Almacén" },
-            { data: "Lote", title: "Lote"},
+            { data: "Placa", title: "Placa"},
+            { data: "Toneladas", title: "Cant. Ton.", render: $.fn.dataTable.render.number('.', ',', 2, '')},
+            { data: "Fecha", title: "Fecha"},
+            { data: "CodPlanta", title: "Cod. CeLog"},
+            { data: "CentroLogistico", title: "Centro logístico"},
             { data: "CodOrigen", title: "Cód. Origen"},
             { data: "Origen", title: "Origen" },
+            { data: "DptoOrigen", title: "Dpto. Origen" },
+            { data: "CiudadOrigen", title: "Ciudad Origen" },
             { data: "CodProveedor", title: "Cod. Prov."},
             { data: "Proveedor", title: "Proveedor" },
-            { data: "Toneladas", title: "Cant. Ton.", render: $.fn.dataTable.render.number('.', ',', 2, '')},
-            { data: "NumViajes", title: "Viajes"},
-            { data: "FechaUltimoMovimiento", title: "Fecha Último Reg."}
+            { data: "CodEmpresaTpte", title: "Cod. Empresa Tpte" },
+            { data: "NombreEmpresaTpte", title: "Empresa Tpte" },
+            { data: "TipoVehiculo", title: "Tipo de Vehículo" },
+            { data: "Trailer", title: "Trailer" },
+            { data: "NumRecibo", title: "No Recibo"}
         ];
 
         if (!tabla) {
@@ -262,8 +276,8 @@ $("#num-alertas").text(registrosConAlerta);
               autoWidth: false,
               dom: 'Blfrtip', // 'l' = select de registros por página
               buttons: [
-                  { extend: 'excelHtml5', text: '📊 Exportar a Excel', className: 'bg-green-500 text-white px-4 py-2 rounded-lg' },
-                  { extend: 'pdfHtml5', text: '📄 Exportar a PDF', className: 'bg-red-500 text-white px-4 py-2 rounded-lg', orientation: 'landscape', pageSize: 'Legal' },
+                  // { extend: 'excelHtml5', text: '📊 Exportar a Excel', className: 'bg-green-500 text-white px-4 py-2 rounded-lg' },
+                  // { extend: 'pdfHtml5', text: '📄 Exportar a PDF', className: 'bg-red-500 text-white px-4 py-2 rounded-lg', orientation: 'landscape', pageSize: 'Legal' },
                   // { extend: 'print', text: '🖨️ Imprimir', className: 'bg-gray-500 text-white px-4 py-2 rounded-lg' }
               ],
               language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json" },
@@ -300,10 +314,11 @@ $(document).ready(function() {
     $("#filtro-hasta").val(ultimoDia.toISOString().split("T")[0]);
 
     // Evento: cada vez que cambie algo en filtros → actualizar cascada
-    $("#filtro-tipo, #filtro-centro, #filtro-material, #filtro-proveedor, #filtro-almacen, #filtro-origen, #filtro-desde, #filtro-hasta")
-        .on("change", function() {
-            actualizarFiltros();
-        });
+    $("#filtro-tipo, #filtro-pedido, #filtro-origen, #filtro-destino, #filtro-transportadora, #filtro-placa, #filtro-proveedor, #filtro-desde, #filtro-hasta")
+      .on("change", function() {
+          let id = $(this).attr("id");
+          actualizarFiltros(id);
+      });
 
     // Carga inicial
     actualizarFiltros();

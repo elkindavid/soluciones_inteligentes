@@ -6,14 +6,14 @@ import pandas as pd
 from sqlalchemy import text
 from app.extensions import db
 
-informes_bp = Blueprint(
-    "informes", __name__,
-    url_prefix="/reporte",
+repingresos_bp = Blueprint(
+    "ingresos", __name__,
+    url_prefix="/control_ingreso",
     template_folder="templates",
     static_folder="static"   
 )
 
-@informes_bp.route("/")
+@repingresos_bp.route("/")
 @login_required
 def index():
     df = obtener_reporte()
@@ -24,7 +24,7 @@ def index():
     origenes = sorted(df['Origen'].dropna().unique()) if 'Origen' in df.columns else []
 
     return render_template(
-        "reporte/index.html",
+        "control_ingreso/index.html",
         centros=centros,
         materiales=materiales,
         proveedores=proveedores,
@@ -38,7 +38,7 @@ def _get_list_param(name):
     return ",".join(vals) if vals else None
 
 
-@informes_bp.route("/data")
+@repingresos_bp.route("/data")
 def get_data():
     tipo = request.args.get("tipo") or None
     fecha_inicio = request.args.get("desde") or None
@@ -75,7 +75,7 @@ def get_data():
     rows = [dict(r) for r in result.mappings()]
     return jsonify(rows)
 
-@informes_bp.route("/filtros", methods=["GET"])
+@repingresos_bp.route("/filtros", methods=["GET"])
 @login_required
 def filtros():
     tipo = _get_list_param("tipo")
