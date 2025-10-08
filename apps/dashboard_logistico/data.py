@@ -4,13 +4,13 @@ import pandas as pd
 from sqlalchemy import text
 from app.extensions import db
 
-def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None, destino=None, transportadora=None, placa=None, proveedor_mat=None):
+def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None, destino=None, transportadora=None, material=None, placa=None, proveedor_mat=None):
     """
     Llama al stored procedure usp_GetInformeLogistico y devuelve un DataFrame.
     Los parámetros pueden ser None o strings con listas separadas por comas.
     """
     sql = """
-    EXEC MESPesajeInteligenteDB.dbo.usp_GetInformeLogistico
+    EXEC MESPesajeInteligenteDB.dbo.usp_GetInformeLogisticoDash
     @tipo=:tipo,
     @fecha_inicio=:fecha_inicio,
     @fecha_fin=:fecha_fin,
@@ -18,6 +18,7 @@ def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None,
     @origen=:origen,
     @destino=:destino,
     @transportadora=:transportadora,
+    @material=:material,
     @placa=:placa,
     @proveedor_mat=:proveedor_mat
     """
@@ -31,6 +32,7 @@ def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None,
         "origen": origen,
         "destino": destino,
         "transportadora": transportadora,
+        "material": material,
         "placa": placa,
         "proveedor_mat": proveedor_mat,
     }
