@@ -1,15 +1,41 @@
+# --- Framework principal ---
+
 Flask==3.0.3
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
-email-validator==2.2.0
 Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.32
+Werkzeug==3.0.3
+itsdangerous==2.2.0
+Jinja2==3.1.4
+blinker==1.8.2
+click==8.1.7
+
+# --- Conexión a bases de datos ---
+
 pyodbc==5.1.0
-python-dotenv==1.0.1
-gunicorn
 psycopg2-binary
+python-dotenv==1.0.1
+
+# --- Análisis y ciencia de datos ---
+
 pandas==2.2.2
+numpy==1.26.4
 openpyxl==3.1.5
 PuLP==3.2.2
 matplotlib==3.10.6
 seaborn==0.13.2
+
+# --- Dashboards interactivos ---
+
+dash==3.2.0
+plotly==5.24.1
+retrying==1.4.2
+nest-asyncio==1.6.0
+typing-extensions==4.14.1
+importlib-metadata==7.0.1
+requests==2.32.3
+
+# --- Servidor de despliegue ---
+
+gunicorn

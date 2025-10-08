@@ -8,6 +8,7 @@ from apps.optimizacion_mezcla_carbon.routes import optimizacion_bp
 from .admin import admin_bp
 from apps.control_logistico.routes import informes_bp
 from apps.control_ingresos.routes import repingresos_bp
+from apps.dashboard_logistico.init import dashboard_bp, init_dashboard
 from config import Config
 import socket
 
@@ -40,5 +41,7 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(informes_bp)   # 👈 registrar aquí
     app.register_blueprint(repingresos_bp)   # 👈 registrar aquí
+    app.register_blueprint(dashboard_bp)
+    init_dashboard(app)
 
     return app
