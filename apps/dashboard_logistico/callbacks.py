@@ -16,9 +16,11 @@ def register_callbacks(app):
         Output("store-df-full", "data"),
         Input("dash-fecha-rango", "start_date"),
         Input("dash-fecha-rango", "end_date"),
+        Input("dash-tipo", "value"),
+        Input("dash-con-transporte", "value"),
         prevent_initial_call=False
     )
-    def load_data(fecha_desde, fecha_hasta):
+    def load_data(fecha_desde, fecha_hasta, tipo, con_transporte):
         if not fecha_desde or not fecha_hasta:
             hoy = datetime.today().date()
             primer_dia = hoy.replace(day=1)
@@ -26,8 +28,19 @@ def register_callbacks(app):
             fecha_desde = primer_dia.isoformat()
             fecha_hasta = ultimo_dia.isoformat()
 
+        # ✅ Si no hay selección, mandamos None (trae todos)
+        if not tipo or len(tipo) == 0:
+            tipo_param = None
+        else:
+            # Convertir lista ['Compras','Traslados'] → 'Compras,Traslados'
+            tipo_param = ",".join(tipo)
+
+        # ✅ Check "Con transporte"
+        con_transporte_param = "1" if con_transporte and "1" in con_transporte else None
+
+        # Llamar función que trae datos del SP
         df = fetch_logistico(
-            tipo=None,
+            tipo=tipo_param,
             desde=fecha_desde,
             hasta=fecha_hasta,
             transportadora=None,
@@ -36,12 +49,15 @@ def register_callbacks(app):
             proveedor_mat=None,
             origen=None,
             destino=None,
-            pedido=None
+            pedido=None,
+            con_transporte=con_transporte_param
         )
 
         if df is None or df.empty:
             return pd.DataFrame().to_json(date_format="iso", orient="split")
+
         return df.to_json(date_format="iso", orient="split")
+
 
     # 2) Actualizar opciones y valores de los dropdowns
     @app.callback(

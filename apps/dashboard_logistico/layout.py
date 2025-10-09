@@ -39,6 +39,42 @@ def build_layout():
                 )
             ], className="w-full md:w-1/4 px-2"),
 
+            # 🧾 Tipo de ingreso
+            html.Div([
+                html.Label("Tipo de Ingreso", className="block text-sm font-medium text-slate-700 mb-1"),
+                dcc.Dropdown(
+                    id="dash-tipo",
+                    multi=True,
+                    placeholder="Selecciona...",
+                    options=[
+                        {"label": "Compras", "value": "Compras"},
+                        {"label": "Traslados", "value": "Traslados"},
+                        {"label": "Terceros", "value": "Terceros"}
+                    ],
+                    style={
+                        "fontSize": "13px",
+                        "whiteSpace": "normal",
+                        "wordWrap": "break-word",
+                        "lineHeight": "1.3",
+                        "minHeight": "45px"
+                    },
+                    className="w-full rounded-lg shadow-sm"
+                )
+            ], className="w-full md:w-1/5 px-2"),  # 👈 más angosto pero alineado visualmente
+
+            # 🚚 Con transporte
+            html.Div([
+                dcc.Checklist(
+                    id="dash-con-transporte",
+                    options=[{"label": "Con transporte", "value": "1"}],
+                    value=[],
+                    className="text-slate-500 text-sm flex items-center space-x-2",
+                    inputStyle={"marginRight": "6px"}
+                )
+            ], className="w-2/12 px-2 flex items-center justify-center"),  # 👈 centrado vertical y horizontal
+
+
+            # 🚛 Transportadora
             html.Div([
                 html.Label("Transportadora", className="block text-sm font-medium text-slate-700 mb-1"),
                 dcc.Dropdown(
@@ -54,7 +90,7 @@ def build_layout():
                     },
                     className="w-full rounded-lg shadow-sm"
                 )
-            ], className="w-full md:w-1/4 px-2"),
+            ], className="w-full md:w-1/3 px-2"),  # 👈 más ancha
 
             html.Div([
                 html.Label("Material", className="block text-sm font-medium text-slate-700 mb-1"),
