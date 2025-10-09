@@ -76,8 +76,9 @@ def login():
 @auth_bp.route("/register", methods=["GET", "POST"])
 @admin_required
 def register():
-    # Traer lista de roles para el form (cuando se hace GET)
-    roles = Roles.query.all()
+    # Traer lista de roles para el form, excluye al SuperUsuario
+    roles = Roles.query.filter(Roles.Nombre != "SuperUsuario").all()
+
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
