@@ -47,9 +47,9 @@ def build_layout():
                     multi=True,
                     placeholder="Selecciona...",
                     options=[
-                        {"label": "Compras", "value": "Compras"},
-                        {"label": "Traslados", "value": "Traslados"},
-                        {"label": "Terceros", "value": "Terceros"}
+                        {"label": "COMPRAS", "value": "Compras"},
+                        {"label": "TRASLADOS", "value": "Traslados"},
+                        {"label": "TERCEROS", "value": "Terceros"}
                     ],
                     style={
                         "fontSize": "13px",
