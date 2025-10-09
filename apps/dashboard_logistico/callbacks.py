@@ -1,6 +1,6 @@
 # apps/dashboard_logistico/callbacks.py
 
-from dash import Input, Output, html
+from dash import Input, Output, State, html
 from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
@@ -10,16 +10,15 @@ import calendar
 from .data import fetch_logistico
 
 def register_callbacks(app):
-    # 1) Cargar datos y llenar store al cambiar filtros
+
+    # 1) Cargar datos completos según rango de fecha
     @app.callback(
-        Output("store-df", "data"),
+        Output("store-df-full", "data"),
         Input("dash-fecha-rango", "start_date"),
         Input("dash-fecha-rango", "end_date"),
-        Input("dash-transportadora", "value"),
-        Input("dash-material", "value"),
         prevent_initial_call=False
     )
-    def load_data(fecha_desde, fecha_hasta, transportadoras, materiales):
+    def load_data(fecha_desde, fecha_hasta):
         if not fecha_desde or not fecha_hasta:
             hoy = datetime.today().date()
             primer_dia = hoy.replace(day=1)
@@ -27,76 +26,110 @@ def register_callbacks(app):
             fecha_desde = primer_dia.isoformat()
             fecha_hasta = ultimo_dia.isoformat()
 
-        t_str = ",".join(transportadoras) if transportadoras else None
-        m_str = ",".join(materiales) if materiales else None
-
         df = fetch_logistico(
             tipo=None,
             desde=fecha_desde,
             hasta=fecha_hasta,
-            transportadora=t_str,
-            material=m_str, 
+            transportadora=None,
+            material=None,
             placa=None,
             proveedor_mat=None,
             origen=None,
             destino=None,
-            pedido=None,
+            pedido=None
         )
 
         if df is None or df.empty:
             return pd.DataFrame().to_json(date_format="iso", orient="split")
         return df.to_json(date_format="iso", orient="split")
 
-    # 2) Llenar dropdowns dependientes
+    # 2) Actualizar opciones y valores de los dropdowns
     @app.callback(
         Output("dash-transportadora", "options"),
         Output("dash-material", "options"),
-        Input("store-df", "data"),
-        prevent_initial_call=False
+        Output("dash-transportadora", "value"),
+        Output("dash-material", "value"),
+        Input("store-df-full", "data"),
+        State("dash-transportadora", "value"),
+        State("dash-material", "value")
     )
-    def populate_dropdowns(store_data):
-        if not store_data:
+    def update_options(df_full_json, sel_transportadora, sel_material):
+        if not df_full_json:
             raise PreventUpdate
-        df = pd.read_json(store_data, orient="split")
-        transportadoras = sorted(df["NombreEmpresaTpte"].dropna().unique()) if "NombreEmpresaTpte" in df.columns else []
-        materiales = sorted(df["Material"].dropna().unique()) if "Material" in df.columns else []
-        return [{"label": t, "value": t} for t in transportadoras], [{"label": m, "value": m} for m in materiales]
+        df = pd.read_json(df_full_json, orient="split")
 
-    # 3) KPIs
+        transportadoras = sorted(df["NombreEmpresaTpte"].dropna().unique())
+        materiales = sorted(df["Material"].dropna().unique())
+
+        sel_transportadora = [v for v in (sel_transportadora or []) if v in transportadoras]
+        sel_material = [v for v in (sel_material or []) if v in materiales]
+
+        options_transportadora = [{"label": t, "value": t} for t in transportadoras]
+        options_material = [{"label": m, "value": m} for m in materiales]
+
+        return options_transportadora, options_material, sel_transportadora, sel_material
+
+    # 3) Filtrar datos según selección de dropdowns
+    @app.callback(
+        Output("store-df", "data"),
+        Input("store-df-full", "data"),
+        Input("dash-transportadora", "value"),
+        Input("dash-material", "value")
+    )
+    def filter_data(df_full_json, transportadoras, materiales):
+        if not df_full_json:
+            raise PreventUpdate
+        df = pd.read_json(df_full_json, orient="split")
+
+        if transportadoras:
+            df = df[df["NombreEmpresaTpte"].isin(transportadoras)]
+        if materiales:
+            df = df[df["Material"].isin(materiales)]
+        return df.to_json(date_format="iso", orient="split")
+
+    # 4) KPIs
     @app.callback(
         Output("kpi-toneladas", "children"),
         Output("kpi-viajes", "children"),
         Output("kpi-proveedores", "children"),
         Input("store-df", "data"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_kpis(store_data):
-        if not store_data:
+    def update_kpis(store_data, n_intervals):
+        if not store_data or n_intervals == 0:
             return (
                 html.Div([html.H6("Toneladas"), html.H3("0 t")]),
                 html.Div([html.H6("Viajes"), html.H3("0")]),
                 html.Div([html.H6("Proveedores"), html.H3("0")]),
             )
+
         df = pd.read_json(store_data, orient="split")
         toneladas = df["Toneladas"].astype(float).sum() if "Toneladas" in df.columns else 0
         viajes = df["NumViajes"].astype(float).sum() if "NumViajes" in df.columns else len(df)
         proveedores = int(df["Proveedor"].nunique()) if "Proveedor" in df.columns else 0
 
+        # 🔹 Formatos personalizados
+        toneladas_fmt = f"{toneladas:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        viajes_fmt = f"{viajes:,.0f}".replace(",", ".")  # solo separador de miles
+
         return (
-            html.Div([html.H6("Toneladas"), html.H3(f"{toneladas:,.2f} t")]),
-            html.Div([html.H6("Viajes"), html.H3(f"{viajes:,}")]),
-            html.Div([html.H6("Proveedores"), html.H3(f"{proveedores:,}")])
+            html.Div([html.H6("Toneladas"), html.H3(f"{toneladas_fmt} t")]),
+            html.Div([html.H6("Viajes"), html.H3(viajes_fmt)]),
+            html.Div([html.H6("Proveedores"), html.H3(f"{proveedores:,}".replace(",", "."))])
         )
 
-    # 4) Ranking rutas principales
+
+    # 5) Ranking rutas principales
     @app.callback(
         Output("graf-rutas", "figure"),
         Input("store-df", "data"),
         Input("dash-topn", "value"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_rutas(store_data, topn):
-        if not store_data:
+    def update_rutas(store_data, topn, n_intervals):
+        if not store_data or n_intervals == 0:
             return {}
         df = pd.read_json(store_data, orient="split")
         if "Origen" not in df.columns or "CentroLogistico" not in df.columns or "Toneladas" not in df.columns:
@@ -115,15 +148,16 @@ def register_callbacks(app):
         fig.update_yaxes(categoryorder="total ascending")
         return fig
 
-    # 5) Ranking materiales por volumen
+    # 6) Ranking materiales por volumen
     @app.callback(
         Output("graf-materiales", "figure"),
         Input("store-df", "data"),
         Input("dash-topn", "value"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_materiales(store_data, topn):
-        if not store_data:
+    def update_materiales(store_data, topn, n_intervals):
+        if not store_data or n_intervals == 0:
             return {}
         df = pd.read_json(store_data, orient="split")
         if "Material" not in df.columns or "Toneladas" not in df.columns:
@@ -141,15 +175,16 @@ def register_callbacks(app):
         fig.update_yaxes(categoryorder="total ascending")
         return fig
 
-    # 6) Ranking orígenes
+    # 7) Ranking orígenes
     @app.callback(
         Output("graf-origenes", "figure"),
         Input("store-df", "data"),
         Input("dash-topn", "value"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_origenes(store_data, topn):
-        if not store_data:
+    def update_origenes(store_data, topn, n_intervals):
+        if not store_data or n_intervals == 0:
             return {}
         df = pd.read_json(store_data, orient="split")
         if "Origen" not in df.columns or "Toneladas" not in df.columns:
@@ -169,23 +204,21 @@ def register_callbacks(app):
         fig.update_yaxes(categoryorder="total ascending")
         return fig
 
-    # 7) Ranking centros logísticos
+    # 8) Ranking centros logísticos
     @app.callback(
         Output("graf-centros", "figure"),
         Input("store-df", "data"),
         Input("dash-topn", "value"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_centros(store_data, topn):
-        if not store_data:
+    def update_centros(store_data, topn, n_intervals):
+        if not store_data or n_intervals == 0:
             return {}
         df = pd.read_json(store_data, orient="split")
         if "CentroLogistico" not in df.columns or "Toneladas" not in df.columns:
             return {}
-        agg = (df.groupby("CentroLogistico")["Toneladas"]
-                 .sum().reset_index()
-                 .sort_values("Toneladas", ascending=False)
-                 .head(int(topn or 50)))
+        agg = df.groupby("CentroLogistico")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 50))
         fig = px.pie(agg, names="CentroLogistico", values="Toneladas",
                      hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel,
                      title="Ingresos por Centro Logístico")
@@ -196,24 +229,22 @@ def register_callbacks(app):
                           showlegend=True, title=dict(font=dict(size=25)))
         return fig
 
-    # 8) Vehículos
+    # 9) Vehículos
     @app.callback(
         Output("graf-vehiculos", "figure"),
         Input("store-df", "data"),
         Input("dash-topn", "value"),
+        Input("init-timer", "n_intervals"),  # 👈 nuevo input
         prevent_initial_call=False
     )
-    def update_vehiculos(store_data, topn):
-        if not store_data:
+    def update_vehiculos(store_data, topn, n_intervals):
+        if not store_data or n_intervals == 0:
             return {}
         df = pd.read_json(store_data, orient="split")
         if "Placa" not in df.columns:
             return {}
-        agg = (df.groupby("Placa")
-                 .agg(Viajes=("Placa", "count"), Toneladas=("Toneladas", "sum"))
-                 .reset_index()
-                 .sort_values("Viajes", ascending=False)
-                 .head(int(topn or 10)))
+        agg = df.groupby("Placa").agg(Viajes=("Placa", "count"), Toneladas=("Toneladas", "sum")).reset_index()
+        agg = agg.sort_values("Viajes", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Viajes", y="Placa", orientation="h",
                      title=f"Top {int(topn or 10)} Vehículos por Viajes",
                      text="Viajes", color="Viajes", color_continuous_scale="Blues",

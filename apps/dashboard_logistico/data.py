@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import text
 from app.extensions import db
 
-def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None, destino=None, transportadora=None, material=None, placa=None, proveedor_mat=None):
+def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None, destino=None, transportadora=None, material=None, placa=None, proveedor_mat=None, con_transporte=None):
     """
     Llama al stored procedure usp_GetInformeLogistico y devuelve un DataFrame.
     Los parámetros pueden ser None o strings con listas separadas por comas.
@@ -20,7 +20,8 @@ def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None,
     @transportadora=:transportadora,
     @material=:material,
     @placa=:placa,
-    @proveedor_mat=:proveedor_mat
+    @proveedor_mat=:proveedor_mat,
+    @con_transporte=:con_transporte
     """
 
 
@@ -35,6 +36,7 @@ def fetch_logistico(tipo=None, desde=None, hasta=None, pedido=None, origen=None,
         "material": material,
         "placa": placa,
         "proveedor_mat": proveedor_mat,
+        "con_transporte": con_transporte,
     }
 
     with db.engine.connect().execution_options(stream_results=True) as conn:

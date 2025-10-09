@@ -118,9 +118,14 @@ def build_layout():
             html.Div(dcc.Graph(id="graf-vehiculos", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
         ], className="flex flex-wrap -mx-2"),
 
-        # store para datos
+       # store para datos
         dcc.Store(
             id="store-df",
             data=pd.DataFrame().to_json(date_format="iso", orient="split")
-        )
+        ),
+        dcc.Store(
+            id="store-df-full",  # <-- nuevo store
+            data=pd.DataFrame().to_json(date_format="iso", orient="split")
+        ),
+        dcc.Interval(id="init-timer", interval=2000, n_intervals=0, max_intervals=1)
     ], className="container mx-auto p-4")

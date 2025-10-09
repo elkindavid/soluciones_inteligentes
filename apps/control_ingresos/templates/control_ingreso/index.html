@@ -99,19 +99,19 @@
 
   <!-- Tarjetas -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-green-100 rounded-lg shadow p-4 text-center">
+    <div class="bg-green-100 rounded-xl shadow p-4 text-center hover:shadow-lg transition">
       <h5 class="text-lg font-semibold mb-2">Ingreso Neto</h5>
       <p class="text-2xl font-bold text-green-700" id="ingreso-neto">0 t</p>
     </div>
-    <div class="bg-blue-100 rounded-lg shadow p-4 text-center">
+    <div class="bg-blue-100 rounded-xl shadow p-4 text-center hover:shadow-lg transition">
       <h5 class="text-lg font-semibold mb-2">Cant. Viajes</h5>
       <p class="text-2xl font-bold text-blue-700" id="num-viajes">0</p>
     </div>
-    <div class="bg-yellow-100 rounded-lg shadow p-4 text-center">
+    <div class="bg-yellow-100 rounded-xl shadow p-4 text-center hover:shadow-lg transition">
       <h5 class="text-lg font-semibold mb-2">Cant. Proveedores</h5>
       <p class="text-2xl font-bold text-yellow-700" id="num-proveedores">0</p>
     </div>
-    <div class="bg-red-100 rounded-lg shadow p-4 text-center">
+    <div class="bg-red-100 rounded-lx shadow p-4 text-center hover:shadow-lg transition">
       <h5 class="text-lg font-semibold mb-2">Registros con alerta</h5>
       <p class="text-2xl font-bold text-red-700" id="num-alertas">0</p>
     </div>    
@@ -201,8 +201,14 @@ function cargarDatos() {
         // Totales
         let totalToneladas = res.reduce((acc, x) => acc + (parseFloat(x.toneladas || x.Toneladas || 0)), 0);
         let totalViajes = res.reduce((acc, x) => acc + (parseFloat(x.num_viajes || x.NumViajes || 1)), 0);
-        $("#ingreso-neto").text(totalToneladas.toFixed(2) + " t");
-        $("#num-viajes").text(totalViajes);
+
+        // 🧮 Formateo con separadores de miles (por configuración local)
+        let toneladasFormateadas = totalToneladas.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        let viajesFormateados = totalViajes.toLocaleString('es-CO');
+
+        // Mostrar KPIs
+        $("#ingreso-neto").text(`${toneladasFormateadas} t`);
+        $("#num-viajes").text(viajesFormateados);
 
         // 🟡 KPI Proveedores distintos
         let proveedoresUnicos = [...new Set(res.map(x => x.Proveedor))];
