@@ -155,7 +155,8 @@ def build_layout():
             html.Div(dcc.Graph(id="graf-materiales", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
             html.Div(dcc.Graph(id="graf-origenes", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
             html.Div(dcc.Graph(id="graf-centros", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
-            html.Div(dcc.Graph(id="graf-vehiculos", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2")
+            html.Div(dcc.Graph(id="graf-vehiculos", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
+            html.Div(dcc.Graph(id="graf-evolucion", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2")
         ], className="flex flex-wrap -mx-2"),
 
        # store para datos

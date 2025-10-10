@@ -80,6 +80,12 @@ def get_data():
     })
 
     rows = [dict(r) for r in result.mappings()]
+
+    # 🔒 Convertir NumTiquete a string para conservar ceros
+    for row in rows:
+        if "NumTiquete" in row and row["NumTiquete"] is not None:
+            row["NumTiquete"] = str(row["NumTiquete"])
+
     return jsonify(rows)
 
 @informes_bp.route("/filtros", methods=["GET"])

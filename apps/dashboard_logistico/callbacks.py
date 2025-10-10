@@ -154,7 +154,7 @@ def register_callbacks(app):
         df["Ruta"] = df["Origen"].astype(str) + " → " + df["CentroLogistico"].astype(str)
         agg = df.groupby("Ruta")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Ruta", orientation="h",
-                     title=f"Top {int(topn or 10)} Rutas por Toneladas",
+                     title=f"📍 Top {int(topn or 10)} Rutas por Toneladas",
                      text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
@@ -181,7 +181,7 @@ def register_callbacks(app):
             return {}
         agg = df.groupby("Material")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Material", orientation="h",
-                     title=f"Top {int(topn or 10)} Materiales por Toneladas",
+                     title=f"🔥 Top {int(topn or 10)} Tipos de Material por Toneladas",
                      text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
@@ -210,7 +210,7 @@ def register_callbacks(app):
             df["Origen"] = df["Origen"].astype(str) + " [" + df["CiudadOrigen"].astype(str) + "]"
         agg = df.groupby("Origen")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Origen", orientation="h",
-                     title=f"Top {int(topn or 10)} Orígenes por Toneladas",
+                     title=f"🌍 Top {int(topn or 10)} Orígenes por Toneladas",
                      text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
@@ -238,7 +238,7 @@ def register_callbacks(app):
         agg = df.groupby("CentroLogistico")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 50))
         fig = px.pie(agg, names="CentroLogistico", values="Toneladas",
                      hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel,
-                     title="Ingresos por Centro Logístico")
+                     title="🏭 Ingresos por Centro Logístico")
         fig.update_traces(texttemplate="%{value:,.0f} t", textinfo="value",
                           textfont=dict(size=12, color="black"),
                           hovertemplate="<b>%{label}</b><br>Toneladas: %{value:,.0f}<extra></extra>")
@@ -263,7 +263,7 @@ def register_callbacks(app):
         agg = df.groupby("Placa").agg(Viajes=("Placa", "count"), Toneladas=("Toneladas", "sum")).reset_index()
         agg = agg.sort_values("Viajes", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Viajes", y="Placa", orientation="h",
-                     title=f"Top {int(topn or 10)} Vehículos por Viajes",
+                     title=f"🚚 Top {int(topn or 10)} Vehículos por Viajes",
                      text="Viajes", color="Viajes", color_continuous_scale="Blues",
                      hover_data={"Toneladas": ":,.0f"}, template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
@@ -274,3 +274,92 @@ def register_callbacks(app):
                           title=dict(font=dict(size=25)))
         fig.update_yaxes(categoryorder="total ascending")
         return fig
+
+    # 10) Evolución temporal de toneladas
+    @app.callback(
+        Output("graf-evolucion", "figure"),
+        Input("store-df", "data"),
+        Input("init-timer", "n_intervals"),
+        prevent_initial_call=False
+    )
+    def update_evolucion(store_data, n_intervals):
+        if not store_data or n_intervals == 0:
+            return {}
+        df = pd.read_json(store_data, orient="split")
+
+        # ✅ Verificar columnas necesarias
+        if "Fecha" not in df.columns or "Toneladas" not in df.columns:
+            return {}
+
+        # Convertir fecha al tipo datetime y agrupar por día
+        df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce", dayfirst=True)
+        df = df.dropna(subset=["Fecha"])
+        df["Fecha"] = df["Fecha"].dt.date
+
+        # Agregar toneladas por día
+        agg = df.groupby("Fecha")["Toneladas"].sum().reset_index()
+
+        # 📊 Calcular métricas estadísticas
+        promedio = agg["Toneladas"].mean()
+        max_row = agg.loc[agg["Toneladas"].idxmax()]
+        min_row = agg.loc[agg["Toneladas"].idxmin()]
+
+        # Crear gráfico base
+        fig = px.line(
+            agg,
+            x="Fecha",
+            y="Toneladas",
+            title="📈 Ingresos Diarios de Material",
+            markers=True,
+            template="plotly",
+        )
+
+        # 🟠 Línea del promedio (texto negro)
+        fig.add_hline(
+            y=promedio,
+            line_dash="dot",
+            line_color="orange",
+            annotation_text=f"Promedio: {promedio:,.1f} ton",
+            annotation_position="bottom right",
+            annotation_font_color="black",  # 👈 texto negro
+            annotation_font_size=12
+        )
+
+        # 🟢 Punto máximo (verde)
+        fig.add_scatter(
+            x=[max_row["Fecha"]],
+            y=[max_row["Toneladas"]],
+            mode="markers+text",
+            marker=dict(color="green", size=10, symbol="circle"),
+            text=[f"Máx: {max_row['Toneladas']:.0f}"],
+            textfont=dict(color="green", size=12),
+            textposition="top center",
+            showlegend=False
+        )
+
+        # 🔴 Punto mínimo (rojo)
+        fig.add_scatter(
+            x=[min_row["Fecha"]],
+            y=[min_row["Toneladas"]],
+            mode="markers+text",
+            marker=dict(color="red", size=10, symbol="circle"),
+            text=[f"Mín: {min_row['Toneladas']:.0f}"],
+            textfont=dict(color="red", size=12),
+            textposition="bottom center",
+            showlegend=False
+        )
+
+        # Estilos generales
+        fig.update_traces(line=dict(width=2), marker=dict(size=6))
+        fig.update_layout(
+            xaxis_title="Fecha",
+            yaxis_title="Toneladas",
+            plot_bgcolor="rgba(0,0,0,0)",
+            hovermode="x unified",
+            title=dict(font=dict(size=25))
+        )
+
+        return fig
+
+
+
