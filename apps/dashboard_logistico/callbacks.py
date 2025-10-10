@@ -6,6 +6,8 @@ import plotly.express as px
 import pandas as pd
 from datetime import datetime
 import calendar
+import plotly.io as pio
+pio.templates.default = "plotly"
 
 from .data import fetch_logistico
 
@@ -153,7 +155,7 @@ def register_callbacks(app):
         agg = df.groupby("Ruta")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Ruta", orientation="h",
                      title=f"Top {int(topn or 10)} Rutas por Toneladas",
-                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues")
+                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
                           margin=dict(l=140),
@@ -180,7 +182,7 @@ def register_callbacks(app):
         agg = df.groupby("Material")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Material", orientation="h",
                      title=f"Top {int(topn or 10)} Materiales por Toneladas",
-                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues")
+                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
                           margin=dict(l=140),
@@ -209,7 +211,7 @@ def register_callbacks(app):
         agg = df.groupby("Origen")["Toneladas"].sum().reset_index().sort_values("Toneladas", ascending=False).head(int(topn or 10))
         fig = px.bar(agg, x="Toneladas", y="Origen", orientation="h",
                      title=f"Top {int(topn or 10)} Orígenes por Toneladas",
-                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues")
+                     text="Toneladas", color="Toneladas", color_continuous_scale="Blues", template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
                           margin=dict(l=140),
@@ -263,7 +265,7 @@ def register_callbacks(app):
         fig = px.bar(agg, x="Viajes", y="Placa", orientation="h",
                      title=f"Top {int(topn or 10)} Vehículos por Viajes",
                      text="Viajes", color="Viajes", color_continuous_scale="Blues",
-                     hover_data={"Toneladas": ":,.0f"})
+                     hover_data={"Toneladas": ":,.0f"}, template="plotly")
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside")
         fig.update_layout(coloraxis_showscale=False, plot_bgcolor="rgba(0,0,0,0)",
                           margin=dict(l=140),

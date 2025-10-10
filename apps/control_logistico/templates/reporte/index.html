@@ -226,17 +226,26 @@ function cargarDatos() {
 
         // 🔴 KPI Registros con alerta
         let registrosConAlerta = res.filter(row => {
-            return Object.values(row).some(val => {
-                if (val === null || val === undefined) return true;
-                if (typeof val === "string") {
-                    let v = val.trim().toLowerCase();
-                    return v === "" || v === "0" || v === "na" || v === "n/a" || v === "no aplica";
-                }
-                if (typeof val === "number") {
-                    return val === 0;
-                }
-                return false;
-            });
+          return Object.entries(row).some(([key, val]) => {
+              // 🚫 Excepción: si es volqueta, ignorar campo Trailer
+              if (key === "Trailer" && row["TipoVehiculo"] && row["TipoVehiculo"].toLowerCase().includes("volqueta")) {
+                  return false; // no se valida Trailer en este caso
+              }
+
+              // Validaciones normales
+              if (val === null || val === undefined) return true;
+
+              if (typeof val === "string") {
+                  let v = val.trim().toLowerCase();
+                  return v === "" || v === "0" || v === "na" || v === "n/a" || v === "no aplica";
+              }
+
+              if (typeof val === "number") {
+                  return val === 0;
+              }
+
+              return false;
+          });
         }).length;
 
 $("#num-alertas").text(registrosConAlerta);
