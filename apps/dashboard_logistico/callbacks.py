@@ -17,10 +17,10 @@ def register_callbacks(app):
         Input("dash-fecha-rango", "start_date"),
         Input("dash-fecha-rango", "end_date"),
         Input("dash-tipo", "value"),
-        Input("dash-con-transporte", "value"),
+        Input("dash-transporte", "value"),
         prevent_initial_call=False
     )
-    def load_data(fecha_desde, fecha_hasta, tipo, con_transporte):
+    def load_data(fecha_desde, fecha_hasta, tipo, transporte):
         if not fecha_desde or not fecha_hasta:
             hoy = datetime.today().date()
             primer_dia = hoy.replace(day=1)
@@ -35,8 +35,7 @@ def register_callbacks(app):
             # Convertir lista ['Compras','Traslados'] → 'Compras,Traslados'
             tipo_param = ",".join(tipo)
 
-        # ✅ Check "Con transporte"
-        con_transporte_param = "1" if con_transporte and "1" in con_transporte else None
+        transporte_param = None if not transporte else ",".join(map(str, transporte))
 
         # Llamar función que trae datos del SP
         df = fetch_logistico(
@@ -50,7 +49,7 @@ def register_callbacks(app):
             origen=None,
             destino=None,
             pedido=None,
-            con_transporte=con_transporte_param
+            transporte=transporte_param
         )
 
         if df is None or df.empty:

@@ -62,16 +62,20 @@ def build_layout():
                 )
             ], className="w-full md:w-1/5 px-2"),  # 👈 más angosto pero alineado visualmente
 
-            # 🚚 Con transporte
+            # 🚚 Con / Sin transporte
             html.Div([
+                html.Label("Transporte", className="block text-sm font-medium text-slate-700 mb-1"),
                 dcc.Checklist(
-                    id="dash-con-transporte",
-                    options=[{"label": "Con transporte", "value": "1"}],
-                    value=[],
-                    className="text-slate-500 text-sm flex items-center space-x-2",
+                    id="dash-transporte",
+                    options=[
+                        {"label": "Con transporte", "value": 1},
+                        {"label": "Sin transporte", "value": 2}
+                    ],
+                    value=[],  # 👈 Por defecto, ninguno seleccionado
+                    className="text-slate-500 text-sm flex flex-col items-start space-y-1",
                     inputStyle={"marginRight": "6px"}
                 )
-            ], className="w-2/12 px-2 flex items-center justify-center"),  # 👈 centrado vertical y horizontal
+            ], className="w-2/12 px-2 flex flex-col items-start justify-center"),
 
 
             # 🚛 Transportadora
@@ -151,7 +155,7 @@ def build_layout():
             html.Div(dcc.Graph(id="graf-materiales", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
             html.Div(dcc.Graph(id="graf-origenes", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
             html.Div(dcc.Graph(id="graf-centros", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
-            html.Div(dcc.Graph(id="graf-vehiculos", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2"),
+            html.Div(dcc.Graph(id="graf-vehiculos", className="rounded-xl shadow bg-white p-2"), className="w-full md:w-1/2 p-2")
         ], className="flex flex-wrap -mx-2"),
 
        # store para datos
