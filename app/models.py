@@ -74,7 +74,7 @@ class LocalUser(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    rol_id = db.Column(db.Boolean, default=False, nullable=False)
+    rol_id = db.Column(db.Integer, default=False, nullable=False)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
